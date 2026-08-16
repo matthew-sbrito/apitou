@@ -1,4 +1,4 @@
-import { EventNav } from "@/components/layout/event-nav";
+import { EventChrome } from "@/components/layout/event-chrome";
 
 export default async function EventLayout({
   children,
@@ -9,10 +9,5 @@ export default async function EventLayout({
 }) {
   const { id } = await params;
 
-  return (
-    <>
-      <EventNav eventId={id} />
-      {children}
-    </>
-  );
+  return <EventChrome eventId={id}>{children}</EventChrome>;
 }

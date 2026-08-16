@@ -15,7 +15,7 @@ export default async function EventsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Suas peladas</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">Suas peladas</h1>
         <Button render={<Link href="/events/new" />} nativeButton={false}>
           <Plus className="h-4 w-4" />
           Nova pelada

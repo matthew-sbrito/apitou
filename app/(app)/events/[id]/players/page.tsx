@@ -30,7 +30,7 @@ export default async function PlayersPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">
+        <h1 className="font-display text-3xl font-bold tracking-tight">
           Jogadores{" "}
           <span className="text-lg font-normal text-muted-foreground">
             ({allPlayers.length})

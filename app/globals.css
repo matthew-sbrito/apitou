@@ -19,6 +19,47 @@
   --apito-red: #dc2626;
 }
 
+/*
+ * Floodlight glow — flat box-shadow is invisible against --apito-black, so
+ * "elevation" here reads as a warm glow instead of a drop shadow.
+ */
+:root {
+  --apito-glow-sm: 0 0 12px 0 color-mix(in oklch, var(--apito-yellow) 35%, transparent);
+  --apito-glow: 0 0 24px 2px color-mix(in oklch, var(--apito-yellow) 40%, transparent);
+  --apito-glow-lg: 0 0 40px 6px color-mix(in oklch, var(--apito-yellow) 45%, transparent);
+}
+
+/*
+ * Stadium-at-night atmosphere: a very low-opacity gradient mesh + grain
+ * texture, applied once as a fixed decorative layer in app/layout.tsx.
+ * Individual pages must not re-add background treatments.
+ */
+:root {
+  --gradient-mesh: radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      color-mix(in oklch, var(--apito-yellow) 12%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 100%,
+      color-mix(in oklch, var(--apito-green) 6%, transparent),
+      transparent 60%
+    );
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*
+ * Safe-area insets for the standalone/portrait PWA (public/manifest.webmanifest)
+ * — resolve to 0px unless app/layout.tsx's viewport also sets viewportFit:"cover".
+ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --bottom-nav-height: 4.25rem;
+}
+
 @theme inline {
   --color-apito-yellow: var(--apito-yellow);
   --color-apito-yellow-strong: var(--apito-yellow-strong);
@@ -31,7 +72,11 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-heading: var(--font-display);
+  --shadow-glow-sm: var(--apito-glow-sm);
+  --shadow-glow: var(--apito-glow);
+  --shadow-glow-lg: var(--apito-glow-lg);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

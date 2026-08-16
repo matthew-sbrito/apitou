@@ -14,7 +14,7 @@ export function MatchClock() {
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <p className="text-7xl font-black tabular-nums tracking-tight text-apito-yellow">
+      <p className="font-display text-7xl font-black tabular-nums tracking-tight text-apito-yellow drop-shadow-[0_0_24px_rgba(245,196,0,0.25)]">
         {formatClock(elapsedMs)}
       </p>
       <p className="text-sm text-muted-foreground">

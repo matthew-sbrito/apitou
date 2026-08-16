@@ -75,7 +75,7 @@ export default async function TeamsPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Banco</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">Banco</h1>
         {!readOnly && (
           <DrawDialog
             eventId={eventId}

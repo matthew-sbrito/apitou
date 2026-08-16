@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Big_Shoulders } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/providers/sw-register";
 import "./globals.css";
@@ -12,6 +12,16 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Modeled on industrial stadium/skyline signage — condensed, tall,
+// high-contrast. Its `opsz` axis covers everything from compact nav labels
+// to hero-sized scoreboard digits from a single variable font file.
+const bigShoulders = Big_Shoulders({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
@@ -33,6 +43,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -43,9 +54,15 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} ${bigShoulders.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 bg-(image:--gradient-mesh)"
+        >
+          <div className="absolute inset-0 bg-(image:--texture-grain) opacity-[0.035] mix-blend-overlay" />
+        </div>
         {children}
         <Toaster />
         <ServiceWorkerRegister />

@@ -25,7 +25,7 @@ export function ScoreBoard() {
           initial={{ scale: 1.4, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 500, damping: 20 }}
-          className="text-4xl font-black tabular-nums text-apito-yellow"
+          className="font-display text-4xl font-black tabular-nums text-apito-yellow"
         >
           {homeGoals} x {awayGoals}
         </motion.span>
