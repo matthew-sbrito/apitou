@@ -7,10 +7,10 @@ import { Plus } from "lucide-react";
 
 export default async function EventsPage() {
   const supabase = await createClient();
-  const { data: events } = await supabase
-    .from("events")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data: events }, { data: { user } }] = await Promise.all([
+    supabase.from("events").select("*").order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,9 +40,14 @@ export default async function EventsPage() {
                     {event.location || "Local a definir"}
                   </p>
                 </div>
-                <Badge variant="secondary">
-                  {eventStatusLabel[event.status]}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {event.owner_id !== user?.id && (
+                    <Badge variant="outline">Convidado</Badge>
+                  )}
+                  <Badge variant="secondary">
+                    {eventStatusLabel[event.status]}
+                  </Badge>
+                </div>
               </Link>
             </li>
           ))}

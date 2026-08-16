@@ -46,8 +46,25 @@ export async function createEvent(values: EventInput): Promise<EventFormState> {
   redirect(`/events/${data.id}`);
 }
 
-export async function finishEvent(eventId: string) {
+export async function finishEvent(eventId: string): Promise<EventFormState> {
   const supabase = await createClient();
+
+  // Safety net (the UI already blocks this in components/event/
+  // finish-event-button.tsx with its own dialog) — refuse if there's a
+  // match still being played, since ending the event mid-match would
+  // strand it in a running/paused state nobody can act on anymore.
+  const { data: activeMatch } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("event_id", eventId)
+    .in("status", ["running", "paused"])
+    .limit(1)
+    .maybeSingle();
+
+  if (activeMatch) {
+    return { error: "Tem uma partida rolando — apita o fim dela primeiro." };
+  }
+
   await supabase.from("events").update({ status: "finished" }).eq("id", eventId);
   redirect(`/events/${eventId}/summary`);
 }

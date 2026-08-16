@@ -92,6 +92,13 @@ export type EventTeamPlayer = {
   created_at: string;
 };
 
+export type EventMember = {
+  id: string;
+  event_id: string;
+  user_id: string;
+  joined_at: string;
+};
+
 export type Match = {
   id: string;
   event_id: string;
@@ -212,6 +219,12 @@ export type Database = {
         Row: EventTeamPlayer;
         Insert: Partial<EventTeamPlayer>;
         Update: Partial<EventTeamPlayer>;
+        Relationships: [];
+      };
+      event_members: {
+        Row: EventMember;
+        Insert: Partial<EventMember>;
+        Update: Partial<EventMember>;
         Relationships: [];
       };
       matches: {

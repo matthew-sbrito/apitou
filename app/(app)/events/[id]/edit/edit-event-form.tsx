@@ -8,7 +8,13 @@ import { eventStatusLabel } from "@/lib/labels";
 import { updateEvent } from "../actions";
 import type { Event } from "@/types/database";
 
-export function EditEventForm({ event }: { event: Event }) {
+export function EditEventForm({
+  event,
+  isOwner,
+}: {
+  event: Event;
+  isOwner: boolean;
+}) {
   return (
     <div className="flex flex-col gap-6">
       <Card className="border-white/10">
@@ -22,7 +28,11 @@ export function EditEventForm({ event }: { event: Event }) {
           <Badge variant="secondary">{eventStatusLabel[event.status]}</Badge>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
-          {event.status === "finished" ? (
+          {!isOwner ? (
+            <p className="rounded-xl border border-white/10 bg-card px-4 py-3 text-sm text-muted-foreground">
+              Só o dono da pelada pode editar — você tá vendo como convidado.
+            </p>
+          ) : event.status === "finished" ? (
             <p className="rounded-xl border border-white/10 bg-card px-4 py-3 text-sm text-muted-foreground">
               Evento encerrado — não dá mais pra editar, só consultar a
               súmula.

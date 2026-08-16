@@ -57,6 +57,55 @@ export async function removePlayer(eventId: string, playerId: string) {
   revalidatePath(`/events/${eventId}/players`);
 }
 
+/** A member adding *themselves* to the roster — distinct from `addPlayer`
+ * (owner-only, can add anyone). Only inserts a row for the caller's own
+ * account; RLS's "members add themselves as players" policy enforces the
+ * same constraint server-side. */
+export async function joinAsPlayer(eventId: string): Promise<PlayerFormState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Faz login pra participar." };
+
+  const name = (user.user_metadata?.name as string | undefined) ?? "Jogador";
+
+  const { error } = await supabase.from("event_players").insert({
+    event_id: eventId,
+    user_id: user.id,
+    name,
+    is_goalkeeper: false,
+    is_substitute: false,
+  });
+
+  if (error) {
+    return { error: "Não rolou entrar na lista. Tenta de novo." };
+  }
+
+  revalidatePath(`/events/${eventId}/players`);
+}
+
+/** The counterpart to `joinAsPlayer` — a member removing their own row.
+ * Not exposed for removing anyone else's (that stays `removePlayer`,
+ * owner-only). */
+export async function leaveAsPlayer(eventId: string, playerId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  await supabase
+    .from("event_players")
+    .delete()
+    .eq("id", playerId)
+    .eq("user_id", user.id);
+
+  revalidatePath(`/events/${eventId}/players`);
+}
+
 export async function updatePlayerRating(
   eventId: string,
   playerId: string,

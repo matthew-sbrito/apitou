@@ -55,3 +55,23 @@ export async function startEvent(eventId: string) {
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events/${eventId}/edit`);
 }
+
+/** A member leaving an event they joined — never used by the owner, who
+ * has no `event_members` row to remove (their access comes from
+ * `owner_id`, not membership). */
+export async function leaveEvent(eventId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  await supabase
+    .from("event_members")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("user_id", user.id);
+
+  redirect("/events");
+}

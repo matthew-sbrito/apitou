@@ -1,5 +1,7 @@
 import { StartEventButton } from "@/components/event/start-event-button";
 import { FinishEventButton } from "@/components/event/finish-event-button";
+import { ShareEventButton } from "@/components/event/share-event-button";
+import { LeaveEventButton } from "@/components/event/leave-event-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { eventStatusLabel } from "@/lib/labels";
@@ -54,14 +56,18 @@ async function getData(eventId: string) {
     { count: playerCount },
     { count: teamCount },
     { data: currentMatch },
+    {
+      data: { user },
+    },
   ] = await Promise.all([
     eventCall,
     playerCountCall,
     teamCountCall,
     currentMatchCall,
+    supabase.auth.getUser(),
   ]);
 
-  return { event, playerCount, teamCount, currentMatch };
+  return { event, playerCount, teamCount, currentMatch, userId: user?.id };
 }
 
 export default async function EventDashboardPage({
@@ -70,9 +76,16 @@ export default async function EventDashboardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { event, playerCount, teamCount, currentMatch } = await getData(id);
+  const { event, playerCount, teamCount, currentMatch, userId } =
+    await getData(id);
 
   if (!event) notFound();
+
+  const isOwner = userId === event.owner_id;
+  const activeMatchId =
+    currentMatch && (currentMatch.status === "running" || currentMatch.status === "paused")
+      ? currentMatch.id
+      : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,16 +98,25 @@ export default async function EventDashboardPage({
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{eventStatusLabel[event.status]}</Badge>
-          <Button
-            render={<Link href={`/events/${id}/edit`} />}
-            nativeButton={false}
-            variant="ghost"
-            size="icon"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
+          {isOwner && (
+            <Button
+              render={<Link href={`/events/${id}/edit`} />}
+              nativeButton={false}
+              variant="ghost"
+              size="icon"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
+
+      {!isOwner && (
+        <p className="text-xs text-muted-foreground">
+          Você tá vendo esse evento como convidado — só o dono pode apitar e
+          editar.
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
         <span className="flex items-center gap-1.5">
@@ -112,8 +134,17 @@ export default async function EventDashboardPage({
         </span>
       </div>
 
-      {event.status === "draft" && <StartEventButton eventId={id} />}
-      {event.status === "running" && <FinishEventButton eventId={id} />}
+      {isOwner ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {event.status === "draft" && <StartEventButton eventId={id} />}
+          {event.status === "running" && (
+            <FinishEventButton eventId={id} activeMatchId={activeMatchId} />
+          )}
+          <ShareEventButton eventId={id} />
+        </div>
+      ) : (
+        <LeaveEventButton eventId={id} />
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Link

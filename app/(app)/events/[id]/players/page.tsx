@@ -5,6 +5,7 @@ import { playerStatusLabel } from "@/lib/labels";
 import { AddPlayerForm } from "./add-player-form";
 import { EditableRating } from "./editable-rating";
 import { removePlayer, setPlayerStatus } from "./actions";
+import { PlayerMembershipButton } from "@/components/event/player-membership-button";
 import { Trash2 } from "lucide-react";
 
 export default async function PlayersPage({
@@ -14,18 +15,28 @@ export default async function PlayersPage({
 }) {
   const { id: eventId } = await params;
   const supabase = await createClient();
-  const [{ data: players }, { data: event }] = await Promise.all([
+  const [
+    { data: players },
+    { data: event },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
     supabase
       .from("event_players")
       .select("*")
       .eq("event_id", eventId)
       .order("created_at", { ascending: true }),
-    supabase.from("events").select("status").eq("id", eventId).single(),
+    supabase.from("events").select("status, owner_id").eq("id", eventId).single(),
+    supabase.auth.getUser(),
   ]);
 
   const allPlayers = players ?? [];
   const activeCount = allPlayers.filter((p) => p.status === "active").length;
-  const readOnly = event?.status === "finished";
+  const isOwner = user?.id === event?.owner_id;
+  const readOnly = !isOwner || event?.status === "finished";
+
+  const myPlayer = allPlayers.find((p) => p.user_id === user?.id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,19 +56,29 @@ export default async function PlayersPage({
         )}
       </div>
 
-      {readOnly ? (
-        <p className="rounded-xl border border-white/10 bg-card px-4 py-3 text-sm text-muted-foreground">
-          Evento encerrado — lista de jogadores só pra consulta.
-        </p>
-      ) : (
-        <AddPlayerForm eventId={eventId} />
+      {isOwner &&
+        (event?.status === "finished" ? (
+          <p className="rounded-xl border border-white/10 bg-card px-4 py-3 text-sm text-muted-foreground">
+            Evento encerrado — lista de jogadores só pra consulta.
+          </p>
+        ) : (
+          <AddPlayerForm eventId={eventId} />
+        ))}
+
+      {!isOwner && event?.status !== "finished" && (
+        <div className="rounded-xl border border-white/10 bg-card px-4 py-3">
+          <PlayerMembershipButton
+            eventId={eventId}
+            myPlayerId={myPlayer?.id ?? null}
+          />
+        </div>
       )}
 
       <ul className="flex flex-col gap-2">
         {allPlayers.map((player) => (
           <li
             key={player.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-3"
+            className="flex flex-col gap-2 rounded-xl border border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
           >
             <div className="flex min-w-0 flex-col">
               <span className="truncate font-medium">
@@ -70,10 +91,13 @@ export default async function PlayersPage({
                     suplente
                   </span>
                 )}
+                {player.user_id === user?.id && (
+                  <span className="ml-2 text-xs text-apito-yellow">você</span>
+                )}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <EditableRating
                 eventId={eventId}
                 playerId={player.id}

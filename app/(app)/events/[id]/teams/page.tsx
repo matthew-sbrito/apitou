@@ -24,6 +24,9 @@ export default async function TeamsPage({
     { data: teams },
     { count: matchCount },
     { data: scorers },
+    {
+      data: { user },
+    },
   ] = await Promise.all([
     supabase.from("events").select("*").eq("id", eventId).single(),
     supabase
@@ -41,11 +44,13 @@ export default async function TeamsPage({
       .select("*", { count: "exact", head: true })
       .eq("event_id", eventId),
     supabase.from("event_scorers").select("*").eq("event_id", eventId),
+    supabase.auth.getUser(),
   ]);
 
   if (!event) notFound();
 
-  const readOnly = event.status === "finished";
+  const isOwner = user?.id === event.owner_id;
+  const readOnly = !isOwner || event.status === "finished";
   const allPlayers = players ?? [];
   const allTeams = (teams ?? []) as unknown as TeamWithRoster[];
 
@@ -89,7 +94,9 @@ export default async function TeamsPage({
 
       {readOnly && (
         <p className="rounded-xl border border-white/10 bg-card px-4 py-3 text-sm text-muted-foreground">
-          Evento encerrado — banco de times só pra consulta.
+          {!isOwner
+            ? "Você tá vendo como convidado — banco de times só pra consulta."
+            : "Evento encerrado — banco de times só pra consulta."}
         </p>
       )}
 

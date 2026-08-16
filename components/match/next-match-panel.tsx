@@ -200,7 +200,10 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={() => finishEvent(eventId)}
+          onClick={async () => {
+            const result = await finishEvent(eventId);
+            if (result?.error) setError(result.error);
+          }}
         >
           Apito final
         </Button>

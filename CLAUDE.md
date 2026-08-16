@@ -19,7 +19,7 @@ the queue and pause/injury flows.
 Routes are English even though technically visible in the address bar:
 `/events`, `/events/[id]/players`, `/events/[id]/teams`,
 `/events/[id]/match/[matchId]`, `/events/[id]/matches`, `/events/[id]/summary`,
-`/events/[id]/edit`, `/login`, `/signup`.
+`/events/[id]/edit`, `/events/[id]/join`, `/login`, `/signup`.
 
 ## Stack
 
@@ -199,6 +199,42 @@ and was removed.
   finished matches through a pure reducer — see `computeQueueState`.
 - **Corrections never delete.** A `void` event points at the wrong one,
   followed by the correct event, at the same `clock_ms`.
+
+## Event membership: owner + read-only members
+
+Beyond the owner, other logged-in users can join an event as a read-only
+**member** — the owner shares `.../events/[id]/join`; opening it while
+logged in joins immediately (`supabase/migrations/0002_event_members.sql`,
+`app/(app)/events/[id]/join/page.tsx`). No approval step yet — see
+`docs/event-membership-approval.md` for that planned follow-up, including
+the (non-breaking) migration path.
+
+- **RLS is purely additive.** Every table already had an owner `for all`
+  policy (`owns_event()`). Membership only adds new `for select` policies
+  (`is_event_member()`) alongside them — Postgres OR's permissive policies
+  for the same command, so none of the owner policies changed. `event_players`
+  additionally gets narrow insert/delete policies scoped to `user_id =
+  auth.uid()`, letting a member add/remove *themselves* from the roster
+  without touching anyone else's row (`joinAsPlayer`/`leaveAsPlayer` in
+  `app/(app)/events/[id]/players/actions.ts`) — this is what
+  `event_players.user_id` (nullable, "null = walk-in player") was already
+  for.
+- **No membership row needed to know "is this viewer the owner."** Every
+  page that needs this just fetches `event.owner_id` and compares to
+  `supabase.auth.getUser()`'s id — if the `events` select returned a row at
+  all, RLS already guarantees the viewer is the owner or a member, so
+  there's no separate "am I a member" query. This is why `.../join` always
+  upserts unconditionally (even for the owner re-visiting their own link)
+  instead of checking ownership first: a brand-new joiner can't yet
+  `select` the event to check, and a stray membership row for the owner is
+  harmless since ownership checks never look at `event_members`.
+- **`readOnly` now has two independent reasons**, both collapsing to the
+  same hide-the-mutation-UI pattern: `!isOwner` (member) or `event.status
+  === "finished"`. `components/match/match-screen.tsx`'s `readOnly` +
+  `readOnlyReason` props are the reference — same locked banner, different
+  copy depending on which reason applies. Apply both checks (`!isOwner ||
+  finished`) anywhere the finished-event lockdown already existed
+  (dashboard, players, teams, edit, match screen).
 
 ## Hydration gotcha: `navigator` is not `undefined` on the server
 

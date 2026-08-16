@@ -63,6 +63,7 @@ You need your own Supabase project (the free tier works).
    in the Supabase SQL Editor and execute it (or `supabase db push` if
    you're using the CLI). It creates every table, view, and RLS policy —
    nothing here has been applied to any project automatically.
+   Or using a direct apply to URL supabase migration up --db-url
 
 ### 3. Run it
 

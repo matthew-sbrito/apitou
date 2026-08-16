@@ -9,9 +9,12 @@ export default async function EditEventPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: event } = await supabase.from("events").select("*").eq("id", id).single();
+  const [{ data: event }, { data: { user } }] = await Promise.all([
+    supabase.from("events").select("*").eq("id", id).single(),
+    supabase.auth.getUser(),
+  ]);
 
   if (!event) notFound();
 
-  return <EditEventForm event={event} />;
+  return <EditEventForm event={event} isOwner={user?.id === event.owner_id} />;
 }

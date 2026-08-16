@@ -17,6 +17,9 @@ export default async function MatchPage({
     { data: lineups },
     { data: events },
     { data: event },
+    {
+      data: { user },
+    },
   ] = await Promise.all([
     supabase.from("matches").select("*").eq("id", matchId).single(),
     supabase.from("event_players").select("*").eq("event_id", eventId),
@@ -26,7 +29,8 @@ export default async function MatchPage({
       .select("*")
       .eq("match_id", matchId)
       .order("created_at", { ascending: true }),
-    supabase.from("events").select("status").eq("id", eventId).single(),
+    supabase.from("events").select("status, owner_id").eq("id", eventId).single(),
+    supabase.auth.getUser(),
   ]);
 
   if (!match) notFound();
@@ -52,5 +56,13 @@ export default async function MatchPage({
     clockOffset: 0,
   };
 
-  return <MatchScreen initial={initial} eventFinished={event?.status === "finished"} />;
+  const isOwner = user?.id === event?.owner_id;
+
+  return (
+    <MatchScreen
+      initial={initial}
+      readOnly={!isOwner || event?.status === "finished"}
+      readOnlyReason={!isOwner ? "member" : "finished"}
+    />
+  );
 }

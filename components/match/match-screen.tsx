@@ -18,24 +18,35 @@ import type { MatchStoreState } from "@/store/match-store";
 
 export function MatchScreen({
   initial,
-  eventFinished = false,
+  readOnly = false,
+  readOnlyReason = "finished",
 }: {
   initial: MatchStoreState;
-  eventFinished?: boolean;
+  readOnly?: boolean;
+  /** Why the viewer can't act — changes the banner copy. A member is
+   * locked out regardless of the match's own status; a finished event
+   * only locks matches once there's nothing left to apitar. */
+  readOnlyReason?: "finished" | "member";
 }) {
   return (
     <MatchStoreProvider initial={initial}>
-      <MatchScreenInner eventFinished={eventFinished} />
+      <MatchScreenInner readOnly={readOnly} readOnlyReason={readOnlyReason} />
     </MatchStoreProvider>
   );
 }
 
-function MatchScreenInner({ eventFinished }: { eventFinished: boolean }) {
+function MatchScreenInner({
+  readOnly,
+  readOnlyReason,
+}: {
+  readOnly: boolean;
+  readOnlyReason: "finished" | "member";
+}) {
   const status = useMatchStore((s) => s.match.status);
   const eventId = useMatchStore((s) => s.match.event_id);
   const setClockOffset = useMatchStore((s) => s.setClockOffset);
   const actions = useMatchActions();
-  useWakeLock(!eventFinished && status === "running");
+  useWakeLock(!readOnly && status === "running");
 
   useEffect(() => {
     const requestedAt = Date.now();
@@ -53,10 +64,10 @@ function MatchScreenInner({ eventFinished }: { eventFinished: boolean }) {
       });
   }, [setClockOffset]);
 
-  if (eventFinished) {
+  if (readOnly) {
     return (
       <div className="flex flex-col gap-6">
-        <ReadOnlyBanner />
+        <ReadOnlyBanner reason={readOnlyReason} />
         {(status === "running" || status === "paused") && <MatchClock />}
         <ScoreBoard />
         <Button render={<Link href={`/events/${eventId}/summary`} />} nativeButton={false}>
@@ -98,11 +109,13 @@ function MatchScreenInner({ eventFinished }: { eventFinished: boolean }) {
   );
 }
 
-function ReadOnlyBanner() {
+function ReadOnlyBanner({ reason }: { reason: "finished" | "member" }) {
   return (
     <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-card px-4 py-3 text-sm text-muted-foreground">
       <Lock className="h-4 w-4 shrink-0 text-apito-yellow" />
-      Evento encerrado — essa partida ficou travada, só pra consulta.
+      {reason === "member"
+        ? "Você tá vendo como convidado — só o dono apita essa partida."
+        : "Evento encerrado — essa partida ficou travada, só pra consulta."}
     </div>
   );
 }

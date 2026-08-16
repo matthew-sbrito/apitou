@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useTransition } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -16,8 +18,56 @@ import {
 import { Flag } from "lucide-react";
 import { finishEvent } from "@/app/(app)/events/actions";
 
-export function FinishEventButton({ eventId }: { eventId: string }) {
+export function FinishEventButton({
+  eventId,
+  activeMatchId = null,
+}: {
+  eventId: string;
+  /** A match currently `running`/`paused`, if any — finishing the event is
+   * blocked while one exists, so there's never a match stranded with
+   * nobody able to act on it anymore. */
+  activeMatchId?: string | null;
+}) {
   const [pending, startTransition] = useTransition();
+
+  async function confirmFinish() {
+    startTransition(async () => {
+      const result = await finishEvent(eventId);
+      if (result?.error) toast.error(result.error);
+    });
+  }
+
+  if (activeMatchId) {
+    return (
+      <AlertDialog>
+        <AlertDialogTrigger render={<Button type="button" variant="outline" />}>
+          <Flag className="h-4 w-4" />
+          Apito final
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem partida rolando!</AlertDialogTitle>
+            <AlertDialogDescription>
+              Não dá pra encerrar a pelada com uma partida em andamento —
+              apita o fim dela primeiro (ou deixa rolando e volta aqui
+              depois).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar rolando</AlertDialogCancel>
+            <AlertDialogAction
+              render={
+                <Link href={`/events/${eventId}/match/${activeMatchId}`} />
+              }
+              nativeButton={false}
+            >
+              Finalizar partida
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
 
   return (
     <AlertDialog>
@@ -35,10 +85,7 @@ export function FinishEventButton({ eventId }: { eventId: string }) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={pending}
-            onClick={() => startTransition(() => finishEvent(eventId))}
-          >
+          <AlertDialogAction disabled={pending} onClick={confirmFinish}>
             {pending ? "Encerrando..." : "Apito final"}
           </AlertDialogAction>
         </AlertDialogFooter>
