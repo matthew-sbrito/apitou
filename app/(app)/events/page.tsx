@@ -1,0 +1,53 @@
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { eventStatusLabel } from "@/lib/labels";
+import { Plus } from "lucide-react";
+
+export default async function EventsPage() {
+  const supabase = await createClient();
+  const { data: events } = await supabase
+    .from("events")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Suas peladas</h1>
+        <Button render={<Link href="/events/new" />} nativeButton={false}>
+          <Plus className="h-4 w-4" />
+          Nova pelada
+        </Button>
+      </div>
+
+      {!events || events.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/15 p-10 text-center text-muted-foreground">
+          Nenhuma pelada ainda. Bora criar a primeira?
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {events.map((event) => (
+            <li key={event.id}>
+              <Link
+                href={`/events/${event.id}`}
+                className="flex items-center justify-between rounded-2xl border border-white/10 p-4 transition-colors hover:border-apito-yellow/50"
+              >
+                <div>
+                  <p className="font-semibold">{event.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {event.location || "Local a definir"}
+                  </p>
+                </div>
+                <Badge variant="secondary">
+                  {eventStatusLabel[event.status]}
+                </Badge>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
