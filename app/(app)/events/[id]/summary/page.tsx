@@ -60,7 +60,9 @@ export default async function SummaryPage({
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Súmula</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">
+          Súmula
+        </h1>
         <p className="text-sm text-muted-foreground">{event.name}</p>
       </div>
 
