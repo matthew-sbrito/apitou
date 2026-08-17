@@ -52,7 +52,7 @@ const features = [
 export default function MarketingPage() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
         <Logo
           imageClassName="h-10 sm:h-14"
           wordClassName="text-base sm:text-lg"
