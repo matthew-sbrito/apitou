@@ -56,7 +56,7 @@ function MatchScreenInner({
         // Rough one-way-latency correction: assume the request took as long
         // going as coming back, so the server's `now` landed at the midpoint.
         const latency = (Date.now() - requestedAt) / 2;
-        setClockOffset(now + latency - Date.now());
+        setClockOffset(Math.round(now + latency - Date.now()));
       })
       .catch(() => {
         // No network yet — keep offset at 0 and trust the device clock

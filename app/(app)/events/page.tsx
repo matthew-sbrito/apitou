@@ -1,9 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { eventStatusLabel } from "@/lib/labels";
+import { formatEventDateTime } from "@/lib/format-date";
 import { createClient } from "@/lib/supabase/server";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { CalendarClock, LocationEdit, Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -58,13 +57,7 @@ export default async function EventsPage() {
                     <CalendarClock className="h-4 w-4 text-apito-yellow" />
                     <span className="text-sm text-muted-foreground">
                       {event.scheduled_at
-                        ? format(
-                            new Date(event.scheduled_at),
-                            "dd/MM/yyyy 'às' HH:mm",
-                            {
-                              locale: ptBR,
-                            },
-                          )
+                        ? formatEventDateTime(event.scheduled_at)
                         : "Data a definir"}
                     </span>
                   </div>

@@ -41,17 +41,26 @@ export async function flushPending(): Promise<boolean> {
   let allOk = true;
 
   for (const event of await listPendingEvents()) {
+    // Defensive: events queued before the clockOffset rounding fix may still
+    // carry a fractional clock_ms, which `bigint` rejects outright — round
+    // here too so those already-stuck items self-heal on the next retry.
     const { error } = await supabase
       .from("match_events")
-      .upsert(event, { onConflict: "id", ignoreDuplicates: true });
+      .upsert({ ...event, clock_ms: Math.round(event.clock_ms) }, { onConflict: "id", ignoreDuplicates: true });
     if (!error) await removePendingEvent(event.id);
-    else allOk = false;
+    else {
+      console.error("[sync] failed to flush match_event", event.id, error);
+      allOk = false;
+    }
   }
 
   for (const [matchId, patch] of await listMatchPatches()) {
     const { error } = await supabase.from("matches").update(patch).eq("id", matchId);
     if (!error) await removeMatchPatch(matchId);
-    else allOk = false;
+    else {
+      console.error("[sync] failed to flush match patch", matchId, error);
+      allOk = false;
+    }
   }
 
   await notify(false);
@@ -64,7 +73,12 @@ function scheduleNext(ok: boolean) {
 }
 
 async function loop() {
-  const ok = await flushPending();
+  let ok = false;
+  try {
+    ok = await flushPending();
+  } catch (error) {
+    console.error("[sync] flush loop threw, will retry", error);
+  }
   scheduleNext(ok);
 }
 

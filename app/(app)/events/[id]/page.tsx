@@ -6,9 +6,8 @@ import { LeaveEventButton } from "@/components/event/leave-event-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { eventStatusLabel } from "@/lib/labels";
+import { formatEventDateTime } from "@/lib/format-date";
 import { createClient } from "@/lib/supabase/server";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   CalendarClock,
   Pencil,
@@ -123,9 +122,7 @@ export default async function EventDashboardPage({
         <span className="flex items-center gap-1.5">
           <CalendarClock className="h-4 w-4 text-apito-yellow" />
           {event.scheduled_at
-            ? format(new Date(event.scheduled_at), "dd/MM/yyyy 'às' HH:mm", {
-                locale: ptBR,
-              })
+            ? formatEventDateTime(event.scheduled_at)
             : "Data a definir"}
         </span>
         <span className="flex items-center gap-1.5">

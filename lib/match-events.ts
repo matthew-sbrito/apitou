@@ -39,6 +39,7 @@ export async function appendEvent(
     created_by: null,
     created_at: new Date().toISOString(),
     ...event,
+    clock_ms: Math.round(event.clock_ms),
   };
 
   try {
