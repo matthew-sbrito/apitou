@@ -9,15 +9,19 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { login, loginWithGoogle } from "./actions";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
+
   const {
     control,
     handleSubmit,
@@ -32,6 +36,14 @@ export default function LoginPage() {
     const result = await login(values);
     if (result?.error) setFormError(result.error);
   }
+
+  useEffect(() => {
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (data.session) router.replace("/events");
+      });
+  }, [router]);
 
   return (
     <Card className="border-white/10">

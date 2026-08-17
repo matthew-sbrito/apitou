@@ -412,7 +412,10 @@ Supabase Auth com dois providers:
 - **Email + senha** — com confirmação por email
 - **Google OAuth** — configurar no console do Google Cloud + painel do Supabase
 
-Rotas protegidas via middleware do Next.js (`@supabase/ssr`). Landing page e `/login` públicas; todo o resto exige sessão.
+Rotas protegidas via checagem de sessão nos layouts (Server Components,
+`@supabase/ssr`) de `(app)` e `(auth)` — não middleware, já que o Next.js 16
+exige runtime Node.js pra Proxy e o Cloudflare Workers ainda não suporta
+isso. Landing page e `/login` públicas; todo o resto exige sessão.
 
 ---
 

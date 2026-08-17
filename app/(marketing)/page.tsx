@@ -53,7 +53,10 @@ export default function MarketingPage() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Logo />
+        <Logo
+          imageClassName="h-10 sm:h-14"
+          wordClassName="text-base sm:text-lg"
+        />
         <nav className="flex items-center gap-3">
           <Button
             render={<Link href="/login" />}
@@ -81,7 +84,7 @@ export default function MarketingPage() {
               venceu pra ficar. O Apitou cuida do cronômetro, do placar e da
               fila — você só toca o apito.
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex gap-3">
               <Button
                 render={<Link href="/signup" />}
                 nativeButton={false}
@@ -100,7 +103,11 @@ export default function MarketingPage() {
             </div>
           </FadeIn>
 
-          <FadeIn delay={0.15} y={24} className="flex flex-1 justify-center">
+          <FadeIn
+            delay={0.15}
+            y={24}
+            className="flex w-full sm:flex-1 justify-end"
+          >
             <MatchScreenMockup />
           </FadeIn>
         </section>
@@ -183,7 +190,7 @@ export default function MarketingPage() {
 
 function MatchScreenMockup() {
   return (
-    <div className="w-full max-w-xs rounded-[2rem] border border-white/10 bg-apito-charcoal p-5 shadow-2xl shadow-black/40">
+    <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-apito-charcoal p-5 shadow-2xl shadow-black/40">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-apito-green" />

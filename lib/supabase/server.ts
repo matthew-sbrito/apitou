@@ -20,8 +20,15 @@ export async function createClient() {
             }
           } catch {
             // Called from a Server Component with no request/response to write
-            // cookies to. Safe to ignore as long as proxy.ts refreshes the
-            // session on every navigation.
+            // cookies to. There's no middleware on this deployment target to
+            // refresh sessions on navigation (Cloudflare Workers can't run
+            // Next.js 16's Node.js-runtime-only Proxy) — instead
+            // components/providers/session-keeper.tsx pings
+            // app/api/auth/refresh/route.ts (a Route Handler, which *can*
+            // persist cookies) on mount/visibility/interval to keep the
+            // session refreshed. This catch just guards the narrow gap that
+            // remains: a Server Component render whose access token happens
+            // to be expired before that refresh runs.
           }
         },
       },

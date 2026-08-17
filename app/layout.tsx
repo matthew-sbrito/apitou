@@ -1,7 +1,7 @@
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Big_Shoulders } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/providers/sw-register";
+import { Toaster } from "@/components/ui/sonner";
+import type { Metadata, Viewport } from "next";
+import { Big_Shoulders, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,11 +30,8 @@ export const metadata: Metadata = {
     "Times, cronômetro, fila de quem ganha fica e súmula da pelada — tudo na palma da mão, direto na beira do campo.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [
-      { url: "/apitou-logo.webp", type: "image/webp" },
-      { url: "/icon.svg", type: "image/svg+xml" },
-    ],
-    apple: "/apitou-logo.webp",
+    icon: [{ url: "/apitou-logo.png", type: "image/png" }],
+    apple: "/apitou-logo.png",
   },
 };
 

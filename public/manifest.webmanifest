@@ -10,22 +10,10 @@
   "theme_color": "#0a0a0a",
   "icons": [
     {
-      "src": "/apitou-logo.webp",
+      "src": "/apitou-logo.png",
       "sizes": "527x473",
-      "type": "image/webp",
+      "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
     }
   ]
 }

@@ -1,14 +1,27 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { AppHeaderGate } from "@/components/layout/app-header-gate";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { SessionKeeper } from "@/components/providers/session-keeper";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <QueryProvider>
+      <SessionKeeper />
       <div className="flex min-h-full flex-1 flex-col">
         <AppHeaderGate>
           <AppHeader />

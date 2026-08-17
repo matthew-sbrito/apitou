@@ -67,7 +67,7 @@ what this codebase uses) a children render function on `SelectValue`:
 Forgetting this compiles fine and looks right until you actually pick an
 item — then the trigger shows the raw id/value instead of the label. Hit
 (and fixed) in `TeamSelect` (`next-match-panel.tsx`) and the player/substitute
-pickers in `pause-panel.tsx`; check any *new* `Select` the same way.
+pickers in `pause-panel.tsx`; check any _new_ `Select` the same way.
 
 ## Forms
 
@@ -89,7 +89,7 @@ example): `useForm<Input>({ resolver: zodResolver(schema) })` +
 `FieldError` primitives from `components/ui/field.tsx`. The zod schemas in
 `lib/validation/*.ts` avoid `z.coerce.*` — form values are already the right
 type (number/boolean) via each field's `onChange`, and `z.coerce` would widen
-the resolver's *input* type to `unknown` and break `useForm<T>` inference.
+the resolver's _input_ type to `unknown` and break `useForm<T>` inference.
 
 Server Actions still re-validate with the same zod schema (`safeParse`) as
 defense in depth, since they're callable directly, not just from the form.
@@ -101,12 +101,12 @@ and bound row-actions like `setPlayerStatus.bind(null, eventId, playerId, status
 ## Other UI patterns worth reusing
 
 - **Date + time input**: `components/form/date-time-picker.tsx` — a Popover
-  + Calendar for the date, and two themed `Select`s (00–23 / :00–:55 in
-  5-min steps) for the time, not a native `<input type="time">`. The native
-  picker's popup can't be restyled to match the app, and its 12h/24h format
-  isn't reliably controllable across browsers; `Select` already inherits the
-  app's color tokens for free. Controlled the way `<Controller>` expects:
-  `value` is a combined ISO string (or `""`), `onChange` receives the new one.
+  - Calendar for the date, and two themed `Select`s (00–23 / :00–:55 in
+    5-min steps) for the time, not a native `<input type="time">`. The native
+    picker's popup can't be restyled to match the app, and its 12h/24h format
+    isn't reliably controllable across browsers; `Select` already inherits the
+    app's color tokens for free. Controlled the way `<Controller>` expects:
+    `value` is a combined ISO string (or `""`), `onChange` receives the new one.
 - **Inline edit-on-blur** (no form, no dialog): `EditableRating` in
   `app/(app)/events/[id]/players/editable-rating.tsx` — local `useState` for
   the input, commit only `onBlur` (skip the write if the value didn't
@@ -114,7 +114,7 @@ and bound row-actions like `setPlayerStatus.bind(null, eventId, playerId, status
   when there's exactly one field and no submit button.
 - **Collapsible match history**: `app/(app)/events/[id]/matches/page.tsx`
   ("Partidas") lists every match as a `Collapsible` (`components/match/
-  match-accordion-item.tsx`) — closed row is just the score line, opening it
+match-accordion-item.tsx`) — closed row is just the score line, opening it
   shows duration, both full rosters (with per-player ⚽/🟨/🟥 counts), and an
   event timeline. All server-computed view models, zero client fetching.
 - **Goal icon is the ⚽ emoji, not lucide's `Goal`**: used consistently in the
@@ -157,7 +157,7 @@ button — the goal is "nothing left to apitar, only the súmula to check":
 open in this state — those are the intended "what's left" destinations.
 
 The dashboard's "next match" card used to filter matches to
-`status in (running, paused, scheduled)` — once the *last* match finished,
+`status in (running, paused, scheduled)` — once the _last_ match finished,
 that query returned nothing and the operator had no path back to
 `NextMatchPanel` (which only exists on a `finished` match's own page).
 Fixed by dropping the status filter and just taking the latest match by
@@ -175,11 +175,11 @@ header, `EventNav`) never re-animates on navigation, only the page content
 inside the matching `template.tsx` does. `EventNav` also returns `null` on
 `/match/*` routes — the match screen stays chrome-free on purpose (PLAN.md §1).
 
-Next only remounts a `template.tsx` when *its own* segment changes; a
+Next only remounts a `template.tsx` when _its own_ segment changes; a
 template declared at the `[id]` level does **not** remount when navigating
 between deeper sibling routes (`.../players` ↔ `.../teams`). That's why
 `PageTransition` still keys its `motion.div` on `usePathname()` internally —
-the template split controls *what* animates, the `key` controls *when*.
+the template split controls _what_ animates, the `key` controls _when_.
 
 If you add a page transition to a new route group, follow the same pattern
 (layout for persistent chrome, sibling template scoped to `{children}` only)
@@ -214,7 +214,7 @@ the (non-breaking) migration path.
   (`is_event_member()`) alongside them — Postgres OR's permissive policies
   for the same command, so none of the owner policies changed. `event_players`
   additionally gets narrow insert/delete policies scoped to `user_id =
-  auth.uid()`, letting a member add/remove *themselves* from the roster
+auth.uid()`, letting a member add/remove _themselves_ from the roster
   without touching anyone else's row (`joinAsPlayer`/`leaveAsPlayer` in
   `app/(app)/events/[id]/players/actions.ts`) — this is what
   `event_players.user_id` (nullable, "null = walk-in player") was already
@@ -230,10 +230,10 @@ the (non-breaking) migration path.
   harmless since ownership checks never look at `event_members`.
 - **`readOnly` now has two independent reasons**, both collapsing to the
   same hide-the-mutation-UI pattern: `!isOwner` (member) or `event.status
-  === "finished"`. `components/match/match-screen.tsx`'s `readOnly` +
+=== "finished"`. `components/match/match-screen.tsx`'s `readOnly` +
   `readOnlyReason` props are the reference — same locked banner, different
   copy depending on which reason applies. Apply both checks (`!isOwner ||
-  finished`) anywhere the finished-event lockdown already existed
+finished`) anywhere the finished-event lockdown already existed
   (dashboard, players, teams, edit, match screen).
 
 ## Hydration gotcha: `navigator` is not `undefined` on the server
@@ -270,7 +270,7 @@ backoff loop that flushes both queues; `hooks/use-sync-status.ts` +
 custom properties) is the **only** place brand colors live; every semantic
 token (`--primary`, `--background`, etc.) aliases those. Swap the hex values
 there when a new logo/palette is ready and the whole app re-colors. The real
-logo is `public/apitou-logo.webp`, wrapped by `components/brand/logo.tsx`
+logo is `public/apitou-logo.png`, wrapped by `components/brand/logo.tsx`
 (used in the header, auth layout, and marketing nav) — `app/icon.svg` and the
 manifest icons are lighter fallbacks alongside it, not meant to be the primary
 mark.
@@ -286,7 +286,7 @@ two in sync when the schema changes. `event_team_players` and
 comment explaining the gap they close (persistent team roster before a team's
 first match; goalkeeper goals-conceded for the súmula highlight).
 
-**PostgREST embed ambiguity on `match_events`.** It has *two* foreign keys
+**PostgREST embed ambiguity on `match_events`.** It has _two_ foreign keys
 into `event_players` — `event_player_id` and `related_player_id` (assist/sub
 partner). `.select("*, event_players(name)")` is therefore ambiguous:
 PostgREST can't tell which FK to embed on and the query errors out. If you
@@ -294,7 +294,7 @@ don't check the `error` from that call (easy to forget — most queries here
 just do `data ?? []`), it silently reads as "no rows", not a crash. Hit this
 in the "Partidas" page, where it made every score read 0x0 despite goals
 existing. Fix: disambiguate with the column hint,
-`event_players!event_player_id(name)`. Any *new* embedded select touching
+`event_players!event_player_id(name)`. Any _new_ embedded select touching
 `match_events` needs the same hint — grep for `from("match_events")` and
 check before adding one.
 

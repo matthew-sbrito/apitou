@@ -1,8 +1,8 @@
-import Link from "next/link";
+import { Logo } from "@/components/brand/logo";
+import { SyncBadge } from "@/components/layout/sync-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/server";
-import { SyncBadge } from "@/components/layout/sync-badge";
-import { Logo } from "@/components/brand/logo";
+import Link from "next/link";
 
 function initialsFor(name: string) {
   return name
@@ -41,11 +41,11 @@ export async function AppHeader() {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-apito-black/85 px-4 py-3 backdrop-blur-md sm:px-6"
+      className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-apito-black/85 px-2 py-2 backdrop-blur-md sm:px-6"
       style={{ paddingTop: "calc(var(--safe-top) + 0.75rem)" }}
     >
       <Link href="/events">
-        <Logo />
+        <Logo imageClassName="h-8 sm:h-10" wordClassName="text-sm sm:text-lg" />
       </Link>
       <div className="flex items-center gap-4">
         <SyncBadge />
