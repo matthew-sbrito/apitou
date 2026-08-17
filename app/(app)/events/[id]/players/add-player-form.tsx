@@ -16,6 +16,7 @@ export function AddPlayerForm({ eventId }: { eventId: string }) {
     control,
     handleSubmit,
     reset,
+    setError,
     formState: { isSubmitting },
   } = useForm<PlayerInput>({
     resolver: zodResolver(playerSchema),
@@ -26,7 +27,14 @@ export function AddPlayerForm({ eventId }: { eventId: string }) {
     setFormError(null);
     const result = await addPlayer(eventId, values);
     if (result?.error) {
-      setFormError(result.error);
+      // Duplicate-name conflicts land on the name field itself, right where
+      // it's editable, instead of a generic banner — the fix is to just
+      // change what's already typed there.
+      if (result.field === "name") {
+        setError("name", { type: "manual", message: result.error });
+      } else {
+        setFormError(result.error);
+      }
       return;
     }
     reset();

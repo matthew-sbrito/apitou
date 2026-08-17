@@ -1,6 +1,7 @@
 import { StartEventButton } from "@/components/event/start-event-button";
 import { FinishEventButton } from "@/components/event/finish-event-button";
 import { ShareEventButton } from "@/components/event/share-event-button";
+import { CopyInviteLinkButton } from "@/components/event/copy-invite-link-button";
 import { LeaveEventButton } from "@/components/event/leave-event-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -140,7 +141,8 @@ export default async function EventDashboardPage({
           {event.status === "running" && (
             <FinishEventButton eventId={id} activeMatchId={activeMatchId} />
           )}
-          <ShareEventButton eventId={id} />
+          <ShareEventButton eventId={id} eventName={event.name} />
+          <CopyInviteLinkButton eventId={id} />
         </div>
       ) : (
         <LeaveEventButton eventId={id} />

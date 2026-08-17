@@ -38,16 +38,17 @@ export default async function JoinEventPage({
   if (error) {
     // 23503 = FK violation — the event id genuinely doesn't exist, a real
     // 404. Anything else (missing table, RLS misconfig, ...) is a setup
-    // problem, not a bad link — surface it instead of masking it as 404.
+    // problem, not a bad link — log it server-side instead of leaking raw
+    // Postgres error codes/messages to the client.
     if (error.code === "23503") notFound();
+
+    console.error("[join] failed to upsert event_members", error);
 
     return (
       <div className="mx-auto flex max-w-sm flex-col gap-3 py-16 text-center">
         <h1 className="text-xl font-bold">Não rolou entrar no evento</h1>
         <p className="text-sm text-muted-foreground">
-          {error.code === "42P01"
-            ? "A tabela de membros ainda não existe no banco — falta rodar supabase/migrations/0002_event_members.sql no projeto Supabase."
-            : `Erro do banco: ${error.message}`}
+          Deu ruim aqui do nosso lado. Tenta de novo em instantes.
         </p>
       </div>
     );

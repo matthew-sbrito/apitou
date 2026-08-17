@@ -1,10 +1,11 @@
-import { createStore, entries, del, set } from "idb-keyval";
+import { entries, del, set } from "idb-keyval";
 import type { MatchEvent } from "@/types/database";
+import { createSharedStore } from "./db";
 
 export type PendingMatchEvent = Partial<MatchEvent> &
   Pick<MatchEvent, "id" | "match_id" | "type" | "clock_ms">;
 
-const store = createStore("apitou-offline", "match-events");
+const store = createSharedStore("match-events");
 
 export async function enqueuePendingEvent(event: PendingMatchEvent): Promise<void> {
   await set(event.id, event, store);

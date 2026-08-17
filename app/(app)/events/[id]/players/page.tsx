@@ -70,6 +70,9 @@ export default async function PlayersPage({
           <PlayerMembershipButton
             eventId={eventId}
             myPlayerId={myPlayer?.id ?? null}
+            defaultName={
+              (user?.user_metadata?.name as string | undefined) ?? "Jogador"
+            }
           />
         </div>
       )}

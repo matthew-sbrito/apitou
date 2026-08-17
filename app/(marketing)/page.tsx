@@ -1,14 +1,8 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
 import { FadeIn } from "@/components/motion/fade-in";
-import {
-  Timer,
-  Flag,
-  ListOrdered,
-  WifiOff,
-  Trophy,
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Flag, ListOrdered, Timer, Trophy, WifiOff } from "lucide-react";
+import Link from "next/link";
 
 const steps = [
   {
@@ -61,7 +55,11 @@ export default function MarketingPage() {
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
         <Logo />
         <nav className="flex items-center gap-3">
-          <Button render={<Link href="/login" />} nativeButton={false} variant="ghost">
+          <Button
+            render={<Link href="/login" />}
+            nativeButton={false}
+            variant="ghost"
+          >
             Entrar
           </Button>
           <Button render={<Link href="/signup" />} nativeButton={false}>
@@ -76,8 +74,7 @@ export default function MarketingPage() {
           <FadeIn className="flex flex-1 flex-col items-start gap-6 text-left">
             <h1 className="text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl">
               Apitou.
-              <br />
-              O resto é com a gente.
+              <br />O resto é com a gente.
             </h1>
             <p className="max-w-md text-lg text-muted-foreground">
               Chega de anotar placar no grupo do zap e brigar pra lembrar quem
@@ -85,7 +82,11 @@ export default function MarketingPage() {
               fila — você só toca o apito.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button render={<Link href="/signup" />} nativeButton={false} size="lg">
+              <Button
+                render={<Link href="/signup" />}
+                nativeButton={false}
+                size="lg"
+              >
                 Criar minha pelada
               </Button>
               <Button
@@ -162,7 +163,11 @@ export default function MarketingPage() {
               Cadastro grátis, sem enrolação. Em dois minutos você já tá
               sorteando os times.
             </p>
-            <Button render={<Link href="/signup" />} nativeButton={false} size="lg">
+            <Button
+              render={<Link href="/signup" />}
+              nativeButton={false}
+              size="lg"
+            >
               Criar minha pelada
             </Button>
           </div>
@@ -196,7 +201,7 @@ function MatchScreenMockup() {
 
       <div className="mt-6 flex items-center justify-between rounded-xl bg-background/60 px-4 py-3">
         <span className="text-sm font-semibold">Amarelo</span>
-        <span className="text-2xl font-black">2 – 1</span>
+        <span className="text-2xl font-black">2 x 1</span>
         <span className="text-sm font-semibold">Preto</span>
       </div>
 

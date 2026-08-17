@@ -1,11 +1,12 @@
-import { createStore, entries, del, get, set } from "idb-keyval";
+import { entries, del, get, set } from "idb-keyval";
 import type { Match } from "@/types/database";
+import { createSharedStore } from "./db";
 
 export type MatchPatch = Partial<
   Pick<Match, "status" | "accumulated_ms" | "started_at" | "finished_at">
 >;
 
-const store = createStore("apitou-offline", "match-patches");
+const store = createSharedStore("match-patches");
 
 /**
  * Keyed by matchId, last-write-wins. Unlike match_events (append-only log,

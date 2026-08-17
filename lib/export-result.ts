@@ -29,7 +29,7 @@ export async function shareResultImage(
   }
 
   try {
-    await navigator.share({ files: [file], title: "Apitou" });
+    await navigator.share({ files: [file] });
   } catch (error) {
     if ((error as DOMException)?.name !== "AbortError") throw error;
   }

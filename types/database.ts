@@ -99,6 +99,14 @@ export type EventMember = {
   joined_at: string;
 };
 
+export type Profile = {
+  user_id: string;
+  custom_name: string | null;
+  rating: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Match = {
   id: string;
   event_id: string;
@@ -225,6 +233,12 @@ export type Database = {
         Row: EventMember;
         Insert: Partial<EventMember>;
         Update: Partial<EventMember>;
+        Relationships: [];
+      };
+      profiles: {
+        Row: Profile;
+        Insert: Partial<Profile> & { user_id: string };
+        Update: Partial<Profile>;
         Relationships: [];
       };
       matches: {
