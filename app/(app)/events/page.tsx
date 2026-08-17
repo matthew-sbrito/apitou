@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { eventStatusLabel } from "@/lib/labels";
 import { formatEventDateTime } from "@/lib/format-date";
+import { eventStatusLabel } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarClock, LocationEdit, Plus } from "lucide-react";
 import Link from "next/link";

@@ -1,13 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { playerSchema, type PlayerInput } from "@/lib/validation/event";
+import {
+  editPlayerSchema,
+  playerSchema,
+  type EditPlayerInput,
+  type PlayerInput,
+} from "@/lib/validation/event";
 import type { PlayerStatus } from "@/types/database";
+import { revalidatePath } from "next/cache";
 
-export type PlayerFormState =
-  | { error: string; field?: "name" }
-  | undefined;
+export type PlayerFormState = { error: string; field?: "name" } | undefined;
 
 export async function addPlayer(
   eventId: string,
@@ -56,10 +59,7 @@ export async function setPlayerStatus(
   status: PlayerStatus,
 ) {
   const supabase = await createClient();
-  await supabase
-    .from("event_players")
-    .update({ status })
-    .eq("id", playerId);
+  await supabase.from("event_players").update({ status }).eq("id", playerId);
 
   revalidatePath(`/events/${eventId}/players`);
 }
@@ -149,6 +149,69 @@ export async function leaveAsPlayer(eventId: string, playerId: string) {
   revalidatePath(`/events/${eventId}/players`);
 }
 
+const RANDOM_PLAYER_NAME_POOL = [
+  "Alan",
+  "Bruno",
+  "Caio",
+  "Diego",
+  "Eduardo",
+  "Felipe",
+  "Gustavo",
+  "Hugo",
+  "Igor",
+  "Joao",
+  "Kaio",
+  "Lucas",
+  "Marcos",
+  "Nathan",
+  "Otavio",
+  "Pedro",
+  "Rafael",
+  "Samuel",
+  "Thiago",
+  "Vitor",
+];
+
+/** Dev-only convenience for populating a roster during local testing —
+ * generates `count` throwaway players with random names/ratings so the
+ * queue/team-draw flows can be exercised without typing each one in by
+ * hand. Guarded server-side (not just by hiding the trigger UI) since
+ * Server Actions are callable directly. */
+export async function addRandomPlayers(eventId: string, count: number) {
+  if (process.env.NODE_ENV !== "development") return;
+  if (!Number.isInteger(count) || count < 1 || count > 30) return;
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("event_players")
+    .select("name")
+    .eq("event_id", eventId);
+  const usedNames = new Set((existing ?? []).map((p) => p.name));
+
+  const rows = Array.from({ length: count }, () => {
+    let name: string;
+    do {
+      const first =
+        RANDOM_PLAYER_NAME_POOL[
+          Math.floor(Math.random() * RANDOM_PLAYER_NAME_POOL.length)
+        ];
+      name = `${first} ${Math.floor(Math.random() * 1000)}`;
+    } while (usedNames.has(name));
+    usedNames.add(name);
+
+    return {
+      event_id: eventId,
+      name,
+      rating: Math.round(Math.random() * 20) / 2,
+      is_goalkeeper: Math.random() < 0.15,
+      is_substitute: Math.random() < 0.15,
+    };
+  });
+
+  await supabase.from("event_players").insert(rows);
+  revalidatePath(`/events/${eventId}/players`);
+}
+
 export async function updatePlayerRating(
   eventId: string,
   playerId: string,
@@ -158,5 +221,33 @@ export async function updatePlayerRating(
 
   const supabase = await createClient();
   await supabase.from("event_players").update({ rating }).eq("id", playerId);
+  revalidatePath(`/events/${eventId}/players`);
+}
+
+/** Backs the edit dialog — goalkeeper/substitute/status/rating all change
+ * together from one form, unlike the single-field auto-save actions above. */
+export async function updatePlayer(
+  eventId: string,
+  playerId: string,
+  values: EditPlayerInput,
+): Promise<PlayerFormState> {
+  const parsed = editPlayerSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Confere os dados aí." };
+  }
+
+  const supabase = await createClient();
+  const { rating, is_goalkeeper, is_substitute, status } = parsed.data;
+
+  const { error } = await supabase
+    .from("event_players")
+    .update({ rating: rating ?? null, is_goalkeeper, is_substitute, status })
+    .eq("id", playerId);
+
+  if (error) {
+    return { error: "Não rolou salvar. Tenta de novo." };
+  }
+
   revalidatePath(`/events/${eventId}/players`);
 }

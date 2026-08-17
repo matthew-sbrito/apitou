@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Flag, Square, Pause } from "lucide-react";
 import { useMatchStore } from "@/components/match/match-store-provider";
 import { useMatchActions } from "@/hooks/use-match-actions";
-import { PlayerActionDialog, type TeamRoster } from "@/components/match/player-action-dialog";
+import {
+  PlayerActionDialog,
+  type TeamRoster,
+} from "@/components/match/player-action-dialog";
 
 export function ActionBar() {
   const homeTeam = useMatchStore((s) => s.homeTeam);
@@ -34,8 +37,16 @@ export function ActionBar() {
           label="Gol"
           onClick={() => setDialog("goal")}
         />
-        <ActionButton icon={<Flag className="h-6 w-6" />} label="Falta" onClick={() => setDialog("foul")} />
-        <ActionButton icon={<Square className="h-6 w-6" />} label="Cartão" onClick={() => setDialog("card")} />
+        <ActionButton
+          icon={<Flag className="h-6 w-6" />}
+          label="Falta"
+          onClick={() => setDialog("foul")}
+        />
+        <ActionButton
+          icon={<Square className="h-6 w-6" />}
+          label="Cartão"
+          onClick={() => setDialog("card")}
+        />
       </div>
 
       <Button
@@ -60,11 +71,13 @@ export function ActionBar() {
           { value: "own_goal", label: "Contra" },
           { value: "penalty_goal", label: "Pênalti" },
         ]}
-        onConfirm={({ teamId, playerId, extra }) =>
+        assistExtraValue="goal"
+        onConfirm={({ teamId, playerId, extra, assistPlayerId }) =>
           actions.recordGoal({
             teamId,
             playerId,
             type: (extra as "goal" | "own_goal" | "penalty_goal") ?? "goal",
+            assistPlayerId,
           })
         }
       />
@@ -75,7 +88,9 @@ export function ActionBar() {
         title="Quem cometeu a falta?"
         rosters={rosters}
         confirmLabel="Registrar falta"
-        onConfirm={({ teamId, playerId }) => actions.recordFoul(teamId, playerId)}
+        onConfirm={({ teamId, playerId }) =>
+          actions.recordFoul(teamId, playerId)
+        }
       />
 
       <PlayerActionDialog
@@ -93,7 +108,8 @@ export function ActionBar() {
           actions.recordCard(
             teamId,
             playerId,
-            (extra as "yellow_card" | "red_card" | "blue_card") ?? "yellow_card",
+            (extra as "yellow_card" | "red_card" | "blue_card") ??
+              "yellow_card",
           )
         }
       />

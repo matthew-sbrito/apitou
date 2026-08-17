@@ -17,6 +17,8 @@ export default async function MatchPage({
     { data: lineups },
     { data: events },
     { data: event },
+    { data: allTeams },
+    { data: teamPlayers },
     {
       data: { user },
     },
@@ -30,6 +32,11 @@ export default async function MatchPage({
       .eq("match_id", matchId)
       .order("created_at", { ascending: true }),
     supabase.from("events").select("status, owner_id").eq("id", eventId).single(),
+    supabase.from("event_teams").select("*").eq("event_id", eventId),
+    supabase
+      .from("event_team_players")
+      .select("event_player_id, event_team_id, event_teams!inner(event_id)")
+      .eq("event_teams.event_id", eventId),
     supabase.auth.getUser(),
   ]);
 
@@ -44,6 +51,13 @@ export default async function MatchPage({
 
   const allPlayers = players ?? [];
   const playersById = Object.fromEntries(allPlayers.map((p) => [p.id, p]));
+  const teamAssignmentRows = (teamPlayers ?? []) as unknown as {
+    event_player_id: string;
+    event_team_id: string;
+  }[];
+  const teamAssignments = Object.fromEntries(
+    teamAssignmentRows.map((tp) => [tp.event_player_id, tp.event_team_id]),
+  );
 
   const initial: MatchStoreState = {
     match,
@@ -53,6 +67,8 @@ export default async function MatchPage({
     lineups: lineups ?? [],
     players: playersById,
     allPlayers,
+    allTeams: allTeams ?? [],
+    teamAssignments,
     clockOffset: 0,
   };
 

@@ -10,6 +10,10 @@ export type MatchStoreState = {
   players: Record<string, EventPlayer>;
   /** Every player in the event, including subs not on this match's lineup. */
   allPlayers: EventPlayer[];
+  /** Every team in the event, not just this match's home/away. */
+  allTeams: EventTeam[];
+  /** Each player's persistent team for the event (event_player_id -> event_team_id). */
+  teamAssignments: Record<string, string>;
   clockOffset: number;
 };
 

@@ -29,17 +29,29 @@ export default async function MatchesPage({
   const { id: eventId } = await params;
   const supabase = await createClient();
 
-  const [{ data: teams }, { data: matches }] = await Promise.all([
+  const [{ data: teams }, { data: matches }, { data: teamPlayers }] = await Promise.all([
     supabase.from("event_teams").select("*").eq("event_id", eventId),
     supabase
       .from("matches")
       .select("*")
       .eq("event_id", eventId)
       .order("sequence", { ascending: true }),
+    supabase
+      .from("event_team_players")
+      .select("event_player_id, event_team_id, event_teams!inner(event_id)")
+      .eq("event_teams.event_id", eventId),
   ]);
 
   const teamById = new Map((teams ?? []).map((t) => [t.id, t]));
   const matchIds = (matches ?? []).map((m) => m.id);
+  const assignedTeamOf = new Map(
+    (
+      (teamPlayers ?? []) as unknown as {
+        event_player_id: string;
+        event_team_id: string;
+      }[]
+    ).map((tp) => [tp.event_player_id, tp.event_team_id]),
+  );
 
   const [{ data: lineups }, { data: events }] =
     matchIds.length > 0
@@ -65,7 +77,13 @@ export default async function MatchesPage({
   const eventsByMatch = groupBy((events ?? []) as unknown as EventRow[], (e) => e.match_id);
 
   const matchVMs: MatchSummaryVM[] = (matches ?? []).map((match) =>
-    buildMatchVM(match, teamById, lineupsByMatch.get(match.id) ?? [], eventsByMatch.get(match.id) ?? []),
+    buildMatchVM(
+      match,
+      teamById,
+      lineupsByMatch.get(match.id) ?? [],
+      eventsByMatch.get(match.id) ?? [],
+      assignedTeamOf,
+    ),
   );
 
   return (
@@ -103,6 +121,7 @@ function buildMatchVM(
   teamById: Map<string, EventTeam>,
   lineups: LineupRow[],
   matchEvents: EventRow[],
+  assignedTeamOf: Map<string, string>,
 ): MatchSummaryVM {
   const homeTeam = teamById.get(match.home_team_id);
   const awayTeam = teamById.get(match.away_team_id);
@@ -133,6 +152,9 @@ function buildMatchVM(
       .filter((l) => l.event_team_id === teamId && l.event_players)
       .map((l) => {
         const stat = statsByPlayer.get(l.event_player_id);
+        const assignedTeam = assignedTeamOf.get(l.event_player_id);
+        const loanFromTeamId =
+          assignedTeam && assignedTeam !== teamId ? assignedTeam : null;
         return {
           id: l.event_player_id,
           name: l.event_players!.name,
@@ -140,6 +162,9 @@ function buildMatchVM(
           goals: stat?.goals ?? 0,
           yellowCards: stat?.yellowCards ?? 0,
           redCards: stat?.redCards ?? 0,
+          loanFromTeamName: loanFromTeamId
+            ? (teamById.get(loanFromTeamId)?.name ?? "outro time")
+            : undefined,
         };
       });
   }

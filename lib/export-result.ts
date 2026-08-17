@@ -5,12 +5,11 @@ export const SUPPORTS_SHARE =
   typeof navigator !== "undefined" && typeof navigator.share === "function";
 
 export async function generateImageBlob(
-  node: HTMLDivElement,
+  node: HTMLElement,
 ): Promise<Blob | null> {
   await document.fonts.ready;
 
   return toBlob(node, {
-    backgroundColor: "#0a0a0a",
     pixelRatio: 2,
     cacheBust: true,
   });

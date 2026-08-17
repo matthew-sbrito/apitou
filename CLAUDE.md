@@ -107,11 +107,6 @@ and bound row-actions like `setPlayerStatus.bind(null, eventId, playerId, status
     isn't reliably controllable across browsers; `Select` already inherits the
     app's color tokens for free. Controlled the way `<Controller>` expects:
     `value` is a combined ISO string (or `""`), `onChange` receives the new one.
-- **Inline edit-on-blur** (no form, no dialog): `EditableRating` in
-  `app/(app)/events/[id]/players/editable-rating.tsx` — local `useState` for
-  the input, commit only `onBlur` (skip the write if the value didn't
-  change), `useTransition` for pending state. Reach for this instead of RHF
-  when there's exactly one field and no submit button.
 - **Collapsible match history**: `app/(app)/events/[id]/matches/page.tsx`
   ("Partidas") lists every match as a `Collapsible` (`components/match/
 match-accordion-item.tsx`) — closed row is just the score line, opening it
@@ -144,9 +139,10 @@ button — the goal is "nothing left to apitar, only the súmula to check":
   before ever reaching the normal scheduled/running/paused/finished branches
   — no `ActionBar`, `PausePanel`, or `NextMatchPanel`.
 - **Players / Teams pages**: each re-fetches `events.status` and swaps the
-  add-forms, status-change buttons, and `TeamCard`'s move/remove/add-player
-  controls for a static "só pra consulta" message (`readOnly` prop threaded
-  into `EditableRating` and `TeamCard`).
+  add-forms, the `EditPlayerDialog`/remove-player controls, and `TeamCard`'s
+  move/remove/add-player controls for a static "só pra consulta" message
+  (`readOnly` prop threaded into `TeamCard`; the players page just omits the
+  edit/remove controls inline based on the same check).
 - **Edit page**: the form itself is replaced by a message instead of being
   merely disabled.
 - **Server Actions**: `startFirstMatch` and `createNextMatch` re-check

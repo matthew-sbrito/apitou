@@ -17,6 +17,9 @@ export type PlayerRow = {
   goals: number;
   yellowCards: number;
   redCards: number;
+  /** Set when this player's persistent team differs from the team they
+   * played for in this match — i.e. they were borrowed for one game. */
+  loanFromTeamName?: string;
 };
 
 export type TimelineEntry = {
@@ -124,6 +127,11 @@ function TeamRoster({
               {player.name}
               {player.isGoalkeeper && (
                 <span className="ml-1.5 text-xs text-apito-yellow">GK</span>
+              )}
+              {player.loanFromTeamName && (
+                <span className="ml-1.5 text-xs text-muted-foreground">
+                  (emprestado de {player.loanFromTeamName})
+                </span>
               )}
             </span>
             <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">

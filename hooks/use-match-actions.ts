@@ -208,6 +208,32 @@ export function useMatchActions() {
     [elapsedNow, record, setPlayerStatus, store],
   );
 
+  /** Adds a player to a team's current lineup with no departing player and
+   * no injury — for when a team simply starts/continues short-handed and
+   * needs to fill the gap (bench player or one borrowed from a team that
+   * isn't playing right now), as opposed to `recordInjury`'s "someone got
+   * hurt" flow. */
+  const addPlayerToLineup = useCallback(
+    async (opts: { teamId: string; playerId: string; role?: "line" | "gk" }) => {
+      const clockMs = elapsedNow();
+      await record("sub_in", { teamId: opts.teamId, playerId: opts.playerId, clockMs });
+
+      const supabase = createClient();
+      const { data: newLineup } = await supabase
+        .from("match_lineups")
+        .insert({
+          match_id: store.match.id,
+          event_team_id: opts.teamId,
+          event_player_id: opts.playerId,
+          role: opts.role ?? "line",
+        })
+        .select("*")
+        .single();
+      if (newLineup) store.addLineup(newLineup);
+    },
+    [elapsedNow, record, store],
+  );
+
   const voidAndCorrect = useCallback(
     async (
       originalEventId: string,
@@ -252,6 +278,7 @@ export function useMatchActions() {
     recordCard,
     recordSuspension,
     recordInjury,
+    addPlayerToLineup,
     voidAndCorrect,
     voidEvent,
     setPlayerStatus,

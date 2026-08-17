@@ -116,7 +116,9 @@ export default async function TeamsPage({
                 eventId={eventId}
                 team={team}
                 roster={allPlayers.filter((p) => rosterIds.has(p.id))}
-                otherPlayers={allPlayers.filter((p) => !rosterIds.has(p.id))}
+                otherPlayers={allPlayers.filter(
+                  (p) => !rosterIds.has(p.id) && p.status === "active",
+                )}
                 playerTeamName={playerTeamName}
                 stats={stats}
                 canMoveUp={index > 0}

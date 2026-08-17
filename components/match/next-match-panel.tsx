@@ -2,7 +2,7 @@
 
 import { createNextMatch } from "@/app/(app)/events/[id]/queue-actions";
 import { moveTeam } from "@/app/(app)/events/[id]/teams/actions";
-import { finishEvent } from "@/app/(app)/events/actions";
+import { FinishEventButton } from "@/components/event/finish-event-button";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -196,17 +196,7 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
         >
           Cancelar, volto depois
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="flex-1"
-          onClick={async () => {
-            const result = await finishEvent(eventId);
-            if (result?.error) setError(result.error);
-          }}
-        >
-          Apito final
-        </Button>
+        <FinishEventButton eventId={eventId} className="flex-1" />
       </div>
     </div>
   );
@@ -234,7 +224,9 @@ function TeamSelect({
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Time">
-            {(id: string | null) => teams.find((t) => t.id === id)?.name ?? "Time"}
+            {(id: string | null) =>
+              teams.find((t) => t.id === id)?.name ?? "Time"
+            }
           </SelectValue>
         </SelectTrigger>
         <SelectContent>

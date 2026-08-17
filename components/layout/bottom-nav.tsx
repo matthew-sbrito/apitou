@@ -1,17 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
+import { isMatchRoute } from "@/lib/is-match-route";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  Users,
+  ScrollText,
   Shirt,
   Swords,
-  ScrollText,
+  Users,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { isMatchRoute } from "@/lib/is-match-route";
+import { motion } from "motion/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const TABS = [
   { suffix: "", label: "Visão geral", icon: LayoutDashboard },
@@ -48,7 +48,7 @@ export function BottomNav({ eventId }: { eventId: string }) {
               {active && (
                 <motion.div
                   layoutId="bottom-nav-active-indicator"
-                  className="absolute inset-x-3 top-0 h-[3px] rounded-full bg-apito-yellow shadow-glow-sm"
+                  className="absolute inset-x-3 top-0 h-0.75 rounded-full bg-apito-yellow shadow-glow-sm"
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
@@ -56,7 +56,9 @@ export function BottomNav({ eventId }: { eventId: string }) {
                 <Icon
                   className={cn(
                     "h-5 w-5 transition-transform",
-                    active ? "scale-110 text-apito-yellow" : "text-muted-foreground",
+                    active
+                      ? "scale-110 text-apito-yellow"
+                      : "text-muted-foreground",
                   )}
                 />
               </motion.div>

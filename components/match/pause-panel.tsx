@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -22,11 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PlayCircle, Wrench } from "lucide-react";
+import { PlayCircle, UserPlus, Wrench } from "lucide-react";
 import { useMatchStore } from "@/components/match/match-store-provider";
 import { useMatchActions } from "@/hooks/use-match-actions";
 import { PlayerActionDialog, type TeamRoster } from "@/components/match/player-action-dialog";
-import type { MatchEvent } from "@/types/database";
+import type { EventPlayer, MatchEvent, MatchLineup } from "@/types/database";
 
 const scoringTypeLabel: Record<string, string> = {
   goal: "Gol",
@@ -34,12 +36,42 @@ const scoringTypeLabel: Record<string, string> = {
   penalty_goal: "Pênalti",
 };
 
+/** Bench players (own reserves) and active players borrowed from a team
+ * that isn't on the court right now — the two pools offered whenever the
+ * operator needs to put someone new into a team's lineup. */
+function getSubstitutePools(
+  allPlayers: EventPlayer[],
+  lineups: MatchLineup[],
+  matchTeamIds: Set<string>,
+  teamAssignments: Record<string, string>,
+) {
+  const lineupIds = new Set(lineups.map((l) => l.event_player_id));
+
+  const bench = allPlayers.filter(
+    (p) => p.is_substitute && p.status === "active" && !lineupIds.has(p.id),
+  );
+  const benchIds = new Set(bench.map((p) => p.id));
+  const otherTeamPlayers = allPlayers.filter(
+    (p) =>
+      !p.is_substitute &&
+      p.status === "active" &&
+      !lineupIds.has(p.id) &&
+      !benchIds.has(p.id) &&
+      teamAssignments[p.id] != null &&
+      !matchTeamIds.has(teamAssignments[p.id]),
+  );
+
+  return { bench, otherTeamPlayers };
+}
+
 export function PausePanel() {
   const homeTeam = useMatchStore((s) => s.homeTeam);
   const awayTeam = useMatchStore((s) => s.awayTeam);
   const lineups = useMatchStore((s) => s.lineups);
   const players = useMatchStore((s) => s.players);
   const allPlayers = useMatchStore((s) => s.allPlayers);
+  const allTeams = useMatchStore((s) => s.allTeams);
+  const teamAssignments = useMatchStore((s) => s.teamAssignments);
   const events = useMatchStore((s) => s.events);
   const actions = useMatchActions();
 
@@ -53,6 +85,11 @@ export function PausePanel() {
           .filter((p) => p && p.status === "active"),
       })),
     [homeTeam, awayTeam, lineups, players],
+  );
+
+  const teamNameById = useMemo(
+    () => Object.fromEntries(allTeams.map((t) => [t.id, t.name])),
+    [allTeams],
   );
 
   const voided = new Set(
@@ -78,9 +115,27 @@ export function PausePanel() {
         Bola rolando
       </Button>
 
-      <RosterOverview rosters={rosters} />
+      <RosterOverview
+        rosters={rosters}
+        teamAssignments={teamAssignments}
+        teamNameById={teamNameById}
+      />
 
-      <InjurySection rosters={rosters} allPlayers={allPlayers} lineups={lineups} />
+      <AddPlayerSection
+        rosters={rosters}
+        allPlayers={allPlayers}
+        lineups={lineups}
+        teamAssignments={teamAssignments}
+        teamNameById={teamNameById}
+      />
+
+      <InjurySection
+        rosters={rosters}
+        allPlayers={allPlayers}
+        lineups={lineups}
+        teamAssignments={teamAssignments}
+        teamNameById={teamNameById}
+      />
 
       {scoringEvents.length > 0 && (
         <CorrectionSection events={scoringEvents} rosters={rosters} players={players} />
@@ -103,15 +158,144 @@ export function PausePanel() {
   );
 }
 
-function RosterOverview({ rosters }: { rosters: TeamRoster[] }) {
+function RosterOverview({
+  rosters,
+  teamAssignments,
+  teamNameById,
+}: {
+  rosters: TeamRoster[];
+  teamAssignments: Record<string, string>;
+  teamNameById: Record<string, string>;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3">
       {rosters.map(({ team, players: roster }) => (
         <div key={team.id} className="rounded-xl border border-white/10 p-3 text-sm">
           <p className="font-semibold">{team.name}</p>
           <p className="text-muted-foreground">{roster.length} jogador(es)</p>
+          {roster
+            .filter(
+              (p) => teamAssignments[p.id] && teamAssignments[p.id] !== team.id,
+            )
+            .map((p) => (
+              <p key={p.id} className="text-xs text-muted-foreground">
+                {p.name}{" "}
+                <span className="text-apito-yellow">
+                  (emprestado de {teamNameById[teamAssignments[p.id]] ?? "outro time"})
+                </span>
+              </p>
+            ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+function AddPlayerSection({
+  rosters,
+  allPlayers,
+  lineups,
+  teamAssignments,
+  teamNameById,
+}: {
+  rosters: TeamRoster[];
+  allPlayers: import("@/types/database").EventPlayer[];
+  lineups: import("@/types/database").MatchLineup[];
+  teamAssignments: Record<string, string>;
+  teamNameById: Record<string, string>;
+}) {
+  const actions = useMatchActions();
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  const matchTeamIds = new Set(rosters.map((r) => r.team.id));
+  const { bench, otherTeamPlayers } = getSubstitutePools(
+    allPlayers,
+    lineups,
+    matchTeamIds,
+    teamAssignments,
+  );
+
+  if (bench.length === 0 && otherTeamPlayers.length === 0) return null;
+
+  async function submit() {
+    if (!teamId || !playerId) return;
+    setPending(true);
+    await actions.addPlayerToLineup({ teamId, playerId });
+    setPending(false);
+    setTeamId(null);
+    setPlayerId(null);
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 p-4">
+      <p className="flex items-center gap-2 font-semibold">
+        <UserPlus className="h-4 w-4 text-apito-yellow" />
+        Completar time
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Time começou (ou continua) desfalcado — bota mais alguém em campo, sem
+        precisar de lesão pra isso.
+      </p>
+
+      <div className="grid grid-cols-2 gap-2">
+        {rosters.map(({ team }) => (
+          <Button
+            key={team.id}
+            type="button"
+            size="sm"
+            variant={teamId === team.id ? "default" : "outline"}
+            onClick={() => {
+              setTeamId(team.id);
+              setPlayerId(null);
+            }}
+          >
+            {team.name}
+          </Button>
+        ))}
+      </div>
+
+      {teamId && (
+        <Select value={playerId ?? undefined} onValueChange={setPlayerId}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Jogador">
+              {(id: string | null) =>
+                [...bench, ...otherTeamPlayers].find((p) => p.id === id)?.name ??
+                "Jogador"
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {bench.length > 0 && (
+              <SelectGroup>
+                <SelectLabel>Reservas</SelectLabel>
+                {bench.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )}
+            {otherTeamPlayers.length > 0 && (
+              <SelectGroup>
+                <SelectLabel>Jogadores de outros times</SelectLabel>
+                {otherTeamPlayers.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} ({teamNameById[teamAssignments[p.id]] ?? "outro time"})
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )}
+          </SelectContent>
+        </Select>
+      )}
+
+      {teamId && (
+        <Button type="button" size="sm" disabled={pending || !playerId} onClick={submit}>
+          {pending ? "Salvando..." : "Confirmar"}
+        </Button>
+      )}
     </div>
   );
 }
@@ -120,10 +304,14 @@ function InjurySection({
   rosters,
   allPlayers,
   lineups,
+  teamAssignments,
+  teamNameById,
 }: {
   rosters: TeamRoster[];
   allPlayers: import("@/types/database").EventPlayer[];
   lineups: import("@/types/database").MatchLineup[];
+  teamAssignments: Record<string, string>;
+  teamNameById: Record<string, string>;
 }) {
   const actions = useMatchActions();
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -133,10 +321,14 @@ function InjurySection({
   const [markUnavailable, setMarkUnavailable] = useState(false);
   const [pending, setPending] = useState(false);
 
-  const lineupIds = new Set(lineups.map((l) => l.event_player_id));
-  const bench = allPlayers.filter(
-    (p) => p.is_substitute && p.status === "active" && !lineupIds.has(p.id),
+  const matchTeamIds = new Set(rosters.map((r) => r.team.id));
+  const { bench, otherTeamPlayers } = getSubstitutePools(
+    allPlayers,
+    lineups,
+    matchTeamIds,
+    teamAssignments,
   );
+  const substituteOptions = [...bench, ...otherTeamPlayers];
 
   const roster = rosters.find((r) => r.team.id === teamId);
 
@@ -217,15 +409,32 @@ function InjurySection({
             <Select value={subInPlayerId ?? undefined} onValueChange={setSubInPlayerId}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Suplente">
-                  {(id: string | null) => bench.find((p) => p.id === id)?.name ?? "Suplente"}
+                  {(id: string | null) =>
+                    substituteOptions.find((p) => p.id === id)?.name ?? "Suplente"
+                  }
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {bench.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
+                {bench.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>Reservas</SelectLabel>
+                    {bench.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+                {otherTeamPlayers.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>Jogadores de outros times</SelectLabel>
+                    {otherTeamPlayers.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({teamNameById[teamAssignments[p.id]] ?? "outro time"})
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
               </SelectContent>
             </Select>
           )}

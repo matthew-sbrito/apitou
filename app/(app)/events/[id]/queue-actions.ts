@@ -18,20 +18,33 @@ async function getTeamRosterForNextMatch(
   };
   type LastMatchRow = { id: string; sequence: number; match_lineups: LineupRow[] };
 
-  const { data } = await supabase
-    .from("matches")
-    .select("id, sequence, match_lineups(event_player_id, role, event_players(status))")
-    .eq("event_id", eventId)
-    .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-    .order("sequence", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [{ data }, { data: teamAssignments }] = await Promise.all([
+    supabase
+      .from("matches")
+      .select("id, sequence, match_lineups(event_player_id, role, event_players(status))")
+      .eq("event_id", eventId)
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+      .order("sequence", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("event_team_players").select("event_player_id, event_team_id"),
+  ]);
+
+  // A player borrowed from another team for a single match (no bench
+  // available) must NOT be inherited into this team's next lineup — only
+  // players with no persistent team (regular subs, current behavior) or
+  // whose persistent team is this one are carried forward.
+  const assignedTeamOf = new Map(
+    (teamAssignments ?? []).map((r) => [r.event_player_id, r.event_team_id]),
+  );
 
   const lastMatch = data as unknown as LastMatchRow | null;
   const priorLineup = lastMatch?.match_lineups ?? [];
-  const relevantRows = priorLineup.filter(
-    (row) => row.event_players?.status === "active",
-  );
+  const relevantRows = priorLineup.filter((row) => {
+    if (row.event_players?.status !== "active") return false;
+    const assignedTeam = assignedTeamOf.get(row.event_player_id);
+    return assignedTeam == null || assignedTeam === teamId;
+  });
 
   if (relevantRows.length > 0) {
     return relevantRows.map((row) => ({

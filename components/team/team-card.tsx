@@ -51,6 +51,17 @@ export function TeamCard({
 }) {
   const [pending, startTransition] = useTransition();
   const rosterIds = roster.map((p) => p.id);
+  const sortedOtherPlayers = [...otherPlayers].sort((a, b) => {
+    const teamCompare = (playerTeamName[a.id] ?? "").localeCompare(
+      playerTeamName[b.id] ?? "",
+      "pt-BR",
+      { sensitivity: "base" },
+    );
+    return (
+      teamCompare ||
+      a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
+    );
+  });
 
   function addPlayer(playerId: string) {
     startTransition(() =>
@@ -190,7 +201,7 @@ export function TeamCard({
             <SelectValue placeholder="Adicionar jogador" />
           </SelectTrigger>
           <SelectContent>
-            {otherPlayers.map((player) => (
+            {sortedOtherPlayers.map((player) => (
               <SelectItem key={player.id} value={player.id}>
                 {player.name}
                 {playerTeamName[player.id]
