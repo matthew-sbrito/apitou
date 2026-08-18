@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { DrawDialog } from "@/components/team/draw-dialog";
-import { TeamCard, type PlayerStat } from "@/components/team/team-card";
+import type { PlayerStat } from "@/components/team/team-card";
+import { TeamsBoard } from "@/components/team/teams-board";
 import { StartMatchButton } from "@/components/team/start-match-button";
 import { AddTeamForm } from "./add-team-form";
 import type { EventTeam } from "@/types/database";
@@ -16,36 +17,8 @@ export default async function TeamsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: eventId } = await params;
-  const supabase = await createClient();
-
-  const [
-    { data: event },
-    { data: players },
-    { data: teams },
-    { count: matchCount },
-    { data: scorers },
-    {
-      data: { user },
-    },
-  ] = await Promise.all([
-    supabase.from("events").select("*").eq("id", eventId).single(),
-    supabase
-      .from("event_players")
-      .select("*")
-      .eq("event_id", eventId)
-      .order("name", { ascending: true }),
-    supabase
-      .from("event_teams")
-      .select("*, event_team_players(event_player_id)")
-      .eq("event_id", eventId)
-      .order("queue_position", { ascending: true }),
-    supabase
-      .from("matches")
-      .select("*", { count: "exact", head: true })
-      .eq("event_id", eventId),
-    supabase.from("event_scorers").select("*").eq("event_id", eventId),
-    supabase.auth.getUser(),
-  ]);
+  const { event, players, teams, matchCount, scorers, user } =
+    await getData(eventId);
 
   if (!event) notFound();
 
@@ -63,19 +36,12 @@ export default async function TeamsPage({
     };
   }
 
-  const rosterIdsByTeam = new Map(
+  const initialRosterIdsByTeam: Record<string, string[]> = Object.fromEntries(
     allTeams.map((team) => [
       team.id,
-      new Set((team.event_team_players ?? []).map((r) => r.event_player_id)),
+      (team.event_team_players ?? []).map((r) => r.event_player_id),
     ]),
   );
-
-  const playerTeamName: Record<string, string> = {};
-  for (const team of allTeams) {
-    for (const playerId of rosterIdsByTeam.get(team.id) ?? []) {
-      playerTeamName[playerId] = team.name;
-    }
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -107,27 +73,14 @@ export default async function TeamsPage({
           Nenhum time ainda. Sorteia ou cria na mão.
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {allTeams.map((team, index) => {
-            const rosterIds = rosterIdsByTeam.get(team.id) ?? new Set<string>();
-            return (
-              <TeamCard
-                key={team.id}
-                eventId={eventId}
-                team={team}
-                roster={allPlayers.filter((p) => rosterIds.has(p.id))}
-                otherPlayers={allPlayers.filter(
-                  (p) => !rosterIds.has(p.id) && p.status === "active",
-                )}
-                playerTeamName={playerTeamName}
-                stats={stats}
-                canMoveUp={index > 0}
-                canMoveDown={index < allTeams.length - 1}
-                readOnly={readOnly}
-              />
-            );
-          })}
-        </div>
+        <TeamsBoard
+          eventId={eventId}
+          teams={allTeams}
+          allPlayers={allPlayers}
+          initialRosterIdsByTeam={initialRosterIdsByTeam}
+          stats={stats}
+          readOnly={readOnly}
+        />
       )}
 
       {!readOnly && allTeams.length >= 2 && !matchCount && (
@@ -135,4 +88,39 @@ export default async function TeamsPage({
       )}
     </div>
   );
+}
+
+async function getData(eventId: string) {
+  const supabase = await createClient();
+
+  const [
+    { data: event },
+    { data: players },
+    { data: teams },
+    { count: matchCount },
+    { data: scorers },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase.from("events").select("*").eq("id", eventId).single(),
+    supabase
+      .from("event_players")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("name", { ascending: true }),
+    supabase
+      .from("event_teams")
+      .select("*, event_team_players(event_player_id)")
+      .eq("event_id", eventId)
+      .order("queue_position", { ascending: true }),
+    supabase
+      .from("matches")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", eventId),
+    supabase.from("event_scorers").select("*").eq("event_id", eventId),
+    supabase.auth.getUser(),
+  ]);
+
+  return { event, players, teams, matchCount, scorers, user };
 }

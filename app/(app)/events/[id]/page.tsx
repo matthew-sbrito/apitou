@@ -1,12 +1,19 @@
-import { StartEventButton } from "@/components/event/start-event-button";
-import { FinishEventButton } from "@/components/event/finish-event-button";
-import { ShareEventButton } from "@/components/event/share-event-button";
+import { CloneEventButton } from "@/components/event/clone-event-button";
 import { CopyInviteLinkButton } from "@/components/event/copy-invite-link-button";
+import { DeleteEventButton } from "@/components/event/delete-event-button";
+import { FinishEventButton } from "@/components/event/finish-event-button";
 import { LeaveEventButton } from "@/components/event/leave-event-button";
+import { ShareEventButton } from "@/components/event/share-event-button";
+import { StartEventButton } from "@/components/event/start-event-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { eventStatusLabel } from "@/lib/labels";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatEventDateTime } from "@/lib/format-date";
+import { eventStatusLabel } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import {
   CalendarClock,
@@ -18,57 +25,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-
-async function getData(eventId: string) {
-  const supabase = await createClient();
-
-  const eventCall = supabase
-    .from("events")
-    .select("*")
-    .eq("id", eventId)
-    .single();
-
-  const playerCountCall = supabase
-    .from("event_players")
-    .select("*", { count: "exact", head: true })
-    .eq("event_id", eventId);
-
-  const teamCountCall = supabase
-    .from("event_teams")
-    .select("*", { count: "exact", head: true })
-    .eq("event_id", eventId);
-
-  // Latest match regardless of status — a *finished* match still needs a
-  // way back in, since that's exactly where the next-match suggestion
-  // lives (components/match/next-match-panel.tsx). Filtering it out here
-  // stranded the operator with no path back once they left that page.
-  const currentMatchCall = supabase
-    .from("matches")
-    .select("id, status")
-    .eq("event_id", eventId)
-    .neq("status", "cancelled")
-    .order("sequence", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const [
-    { data: event },
-    { count: playerCount },
-    { count: teamCount },
-    { data: currentMatch },
-    {
-      data: { user },
-    },
-  ] = await Promise.all([
-    eventCall,
-    playerCountCall,
-    teamCountCall,
-    currentMatchCall,
-    supabase.auth.getUser(),
-  ]);
-
-  return { event, playerCount, teamCount, currentMatch, userId: user?.id };
-}
 
 export default async function EventDashboardPage({
   params,
@@ -83,7 +39,8 @@ export default async function EventDashboardPage({
 
   const isOwner = userId === event.owner_id;
   const activeMatchId =
-    currentMatch && (currentMatch.status === "running" || currentMatch.status === "paused")
+    currentMatch &&
+    (currentMatch.status === "running" || currentMatch.status === "paused")
       ? currentMatch.id
       : null;
 
@@ -91,7 +48,9 @@ export default async function EventDashboardPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">{event.name}</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            {event.name}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {event.location || "Local a definir"}
           </p>
@@ -99,14 +58,27 @@ export default async function EventDashboardPage({
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{eventStatusLabel[event.status]}</Badge>
           {isOwner && (
-            <Button
-              render={<Link href={`/events/${id}/edit`} />}
-              nativeButton={false}
-              variant="ghost"
-              size="icon"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+            <>
+              {event.status !== "finished" && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        render={<Link href={`/events/${id}/edit`} />}
+                        nativeButton={false}
+                        variant="ghost"
+                        size="icon"
+                      />
+                    }
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>Editar evento</TooltipContent>
+                </Tooltip>
+              )}
+              <CloneEventButton eventId={id} />
+              <DeleteEventButton eventId={id} />
+            </>
           )}
         </div>
       </div>
@@ -216,4 +188,55 @@ export default async function EventDashboardPage({
       </Button>
     </div>
   );
+}
+
+async function getData(eventId: string) {
+  const supabase = await createClient();
+
+  const eventCall = supabase
+    .from("events")
+    .select("*")
+    .eq("id", eventId)
+    .single();
+
+  const playerCountCall = supabase
+    .from("event_players")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId);
+
+  const teamCountCall = supabase
+    .from("event_teams")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId);
+
+  // Latest match regardless of status — a *finished* match still needs a
+  // way back in, since that's exactly where the next-match suggestion
+  // lives (components/match/next-match-panel.tsx). Filtering it out here
+  // stranded the operator with no path back once they left that page.
+  const currentMatchCall = supabase
+    .from("matches")
+    .select("id, status")
+    .eq("event_id", eventId)
+    .neq("status", "cancelled")
+    .order("sequence", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const [
+    { data: event },
+    { count: playerCount },
+    { count: teamCount },
+    { data: currentMatch },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    eventCall,
+    playerCountCall,
+    teamCountCall,
+    currentMatchCall,
+    supabase.auth.getUser(),
+  ]);
+
+  return { event, playerCount, teamCount, currentMatch, userId: user?.id };
 }

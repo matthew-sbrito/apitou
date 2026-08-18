@@ -22,7 +22,17 @@ export async function createEvent(values: EventInput): Promise<EventFormState> {
 
   if (!user) redirect("/login");
 
-  const { name, location, scheduled_at, team_size, has_goalkeeper } = parsed.data;
+  const {
+    name,
+    location,
+    scheduled_at,
+    team_size,
+    has_goalkeeper,
+    drawRule,
+    maxReign,
+    matchDurationMs,
+    goalLimit,
+  } = parsed.data;
 
   const { data, error } = await supabase
     .from("events")
@@ -35,6 +45,7 @@ export async function createEvent(values: EventInput): Promise<EventFormState> {
         : null,
       team_size,
       has_goalkeeper,
+      rules: { drawRule, maxReign, matchDurationMs, goalLimit },
     })
     .select("id")
     .single();

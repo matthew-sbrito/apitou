@@ -27,23 +27,10 @@ export default async function MatchesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: eventId } = await params;
-  const supabase = await createClient();
-
-  const [{ data: teams }, { data: matches }, { data: teamPlayers }] = await Promise.all([
-    supabase.from("event_teams").select("*").eq("event_id", eventId),
-    supabase
-      .from("matches")
-      .select("*")
-      .eq("event_id", eventId)
-      .order("sequence", { ascending: true }),
-    supabase
-      .from("event_team_players")
-      .select("event_player_id, event_team_id, event_teams!inner(event_id)")
-      .eq("event_teams.event_id", eventId),
-  ]);
+  const { teams, matches, teamPlayers, lineups, events } =
+    await getData(eventId);
 
   const teamById = new Map((teams ?? []).map((t) => [t.id, t]));
-  const matchIds = (matches ?? []).map((m) => m.id);
   const assignedTeamOf = new Map(
     (
       (teamPlayers ?? []) as unknown as {
@@ -52,26 +39,6 @@ export default async function MatchesPage({
       }[]
     ).map((tp) => [tp.event_player_id, tp.event_team_id]),
   );
-
-  const [{ data: lineups }, { data: events }] =
-    matchIds.length > 0
-      ? await Promise.all([
-          supabase
-            .from("match_lineups")
-            .select("match_id, event_team_id, event_player_id, event_players(name, is_goalkeeper)")
-            .in("match_id", matchIds),
-          supabase
-            .from("match_events")
-            // match_events has *two* FKs into event_players (event_player_id
-            // and related_player_id) — without the `!event_player_id` hint,
-            // PostgREST can't tell which one to embed on and the whole
-            // query errors out silently here (we weren't checking `error`),
-            // so `events` came back empty and every score read as 0x0.
-            .select("*, event_players!event_player_id(name)")
-            .in("match_id", matchIds)
-            .order("clock_ms", { ascending: true }),
-        ])
-      : [{ data: [] }, { data: [] }];
 
   const lineupsByMatch = groupBy((lineups ?? []) as unknown as LineupRow[], (l) => l.match_id);
   const eventsByMatch = groupBy((events ?? []) as unknown as EventRow[], (e) => e.match_id);
@@ -103,6 +70,47 @@ export default async function MatchesPage({
       )}
     </div>
   );
+}
+
+async function getData(eventId: string) {
+  const supabase = await createClient();
+
+  const [{ data: teams }, { data: matches }, { data: teamPlayers }] = await Promise.all([
+    supabase.from("event_teams").select("*").eq("event_id", eventId),
+    supabase
+      .from("matches")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("sequence", { ascending: true }),
+    supabase
+      .from("event_team_players")
+      .select("event_player_id, event_team_id, event_teams!inner(event_id)")
+      .eq("event_teams.event_id", eventId),
+  ]);
+
+  const matchIds = (matches ?? []).map((m) => m.id);
+
+  const [{ data: lineups }, { data: events }] =
+    matchIds.length > 0
+      ? await Promise.all([
+          supabase
+            .from("match_lineups")
+            .select("match_id, event_team_id, event_player_id, event_players(name, is_goalkeeper)")
+            .in("match_id", matchIds),
+          supabase
+            .from("match_events")
+            // match_events has *two* FKs into event_players (event_player_id
+            // and related_player_id) — without the `!event_player_id` hint,
+            // PostgREST can't tell which one to embed on and the whole
+            // query errors out silently here (we weren't checking `error`),
+            // so `events` came back empty and every score read as 0x0.
+            .select("*, event_players!event_player_id(name)")
+            .in("match_id", matchIds)
+            .order("clock_ms", { ascending: true }),
+        ])
+      : [{ data: [] }, { data: [] }];
+
+  return { teams, matches, teamPlayers, lineups, events };
 }
 
 function groupBy<T, K>(items: T[], key: (item: T) => K): Map<K, T[]> {

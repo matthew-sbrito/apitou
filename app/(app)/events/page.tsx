@@ -7,19 +7,7 @@ import { CalendarClock, LocationEdit, Plus } from "lucide-react";
 import Link from "next/link";
 
 export default async function EventsPage() {
-  const supabase = await createClient();
-  const [
-    { data: events },
-    {
-      data: { user },
-    },
-  ] = await Promise.all([
-    supabase
-      .from("events")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    supabase.auth.getUser(),
-  ]);
+  const { events, user } = await getData();
 
   return (
     <div className="flex flex-col gap-6">
@@ -77,4 +65,22 @@ export default async function EventsPage() {
       )}
     </div>
   );
+}
+
+async function getData() {
+  const supabase = await createClient();
+  const [
+    { data: events },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase
+      .from("events")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+  ]);
+
+  return { events, user };
 }

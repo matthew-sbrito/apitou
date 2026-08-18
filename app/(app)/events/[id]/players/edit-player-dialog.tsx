@@ -22,6 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { playerStatusLabel } from "@/lib/labels";
 import { editPlayerSchema, type EditPlayerInput } from "@/lib/validation/event";
 import type { EventPlayer, PlayerStatus } from "@/types/database";
@@ -80,9 +85,18 @@ export function EditPlayerDialog({
         }
       }}
     >
-      <DialogTrigger render={<Button type="button" variant="ghost" size="icon" />}>
-        <Pencil className="h-4 w-4" />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={<Button type="button" variant="ghost" size="icon" />}
+            />
+          }
+        >
+          <Pencil className="h-4 w-4" />
+        </TooltipTrigger>
+        <TooltipContent>Editar jogador</TooltipContent>
+      </Tooltip>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Editar {player.name}</DialogTitle>

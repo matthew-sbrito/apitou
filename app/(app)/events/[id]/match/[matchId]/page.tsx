@@ -9,44 +9,20 @@ export default async function MatchPage({
   params: Promise<{ id: string; matchId: string }>;
 }) {
   const { id: eventId, matchId } = await params;
-  const supabase = await createClient();
-
-  const [
-    { data: match },
-    { data: players },
-    { data: lineups },
-    { data: events },
-    { data: event },
-    { data: allTeams },
-    { data: teamPlayers },
-    {
-      data: { user },
-    },
-  ] = await Promise.all([
-    supabase.from("matches").select("*").eq("id", matchId).single(),
-    supabase.from("event_players").select("*").eq("event_id", eventId),
-    supabase.from("match_lineups").select("*").eq("match_id", matchId),
-    supabase
-      .from("match_events")
-      .select("*")
-      .eq("match_id", matchId)
-      .order("created_at", { ascending: true }),
-    supabase.from("events").select("status, owner_id").eq("id", eventId).single(),
-    supabase.from("event_teams").select("*").eq("event_id", eventId),
-    supabase
-      .from("event_team_players")
-      .select("event_player_id, event_team_id, event_teams!inner(event_id)")
-      .eq("event_teams.event_id", eventId),
-    supabase.auth.getUser(),
-  ]);
+  const {
+    match,
+    players,
+    lineups,
+    events,
+    event,
+    allTeams,
+    teamPlayers,
+    user,
+    homeTeam,
+    awayTeam,
+  } = await getData(eventId, matchId);
 
   if (!match) notFound();
-
-  const [{ data: homeTeam }, { data: awayTeam }] = await Promise.all([
-    supabase.from("event_teams").select("*").eq("id", match.home_team_id).single(),
-    supabase.from("event_teams").select("*").eq("id", match.away_team_id).single(),
-  ]);
-
   if (!homeTeam || !awayTeam) notFound();
 
   const allPlayers = players ?? [];
@@ -81,4 +57,57 @@ export default async function MatchPage({
       readOnlyReason={!isOwner ? "member" : "finished"}
     />
   );
+}
+
+async function getData(eventId: string, matchId: string) {
+  const supabase = await createClient();
+
+  const [
+    { data: match },
+    { data: players },
+    { data: lineups },
+    { data: events },
+    { data: event },
+    { data: allTeams },
+    { data: teamPlayers },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase.from("matches").select("*").eq("id", matchId).single(),
+    supabase.from("event_players").select("*").eq("event_id", eventId),
+    supabase.from("match_lineups").select("*").eq("match_id", matchId),
+    supabase
+      .from("match_events")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("created_at", { ascending: true }),
+    supabase.from("events").select("status, owner_id").eq("id", eventId).single(),
+    supabase.from("event_teams").select("*").eq("event_id", eventId),
+    supabase
+      .from("event_team_players")
+      .select("event_player_id, event_team_id, event_teams!inner(event_id)")
+      .eq("event_teams.event_id", eventId),
+    supabase.auth.getUser(),
+  ]);
+
+  const [{ data: homeTeam }, { data: awayTeam }] = match
+    ? await Promise.all([
+        supabase.from("event_teams").select("*").eq("id", match.home_team_id).single(),
+        supabase.from("event_teams").select("*").eq("id", match.away_team_id).single(),
+      ])
+    : [{ data: null }, { data: null }];
+
+  return {
+    match,
+    players,
+    lineups,
+    events,
+    event,
+    allTeams,
+    teamPlayers,
+    user,
+    homeTeam,
+    awayTeam,
+  };
 }

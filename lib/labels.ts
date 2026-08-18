@@ -1,4 +1,5 @@
 import type {
+  DrawRule,
   EventStatus,
   MatchEventType,
   MatchStatus,
@@ -9,6 +10,16 @@ export const eventStatusLabel: Record<EventStatus, string> = {
   draft: "Rascunho",
   running: "Rolando",
   finished: "Encerrado",
+};
+
+/** Who leaves the quadra when a match on "quem ganha fica" ends empatada —
+ * defensor/desafiante per lib/queue-engine.ts's applyResult (PLAN.md §7.2):
+ * the defensor is whichever team has been on court longer. */
+export const drawRuleLabel: Record<DrawRule, string> = {
+  defender_leaves: "Quem tava na quadra sai",
+  challenger_leaves: "Quem chegou agora sai",
+  both_leave: "Os dois times saem",
+  penalties: "Decide nos pênaltis",
 };
 
 export const matchStatusLabel: Record<MatchStatus, string> = {

@@ -11,6 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { computeQueueState, type FinishedMatch } from "@/lib/queue-engine";
 import { createClient } from "@/lib/supabase/client";
 import type { EventTeam } from "@/types/database";
@@ -162,24 +167,38 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
                   {index + 1}. {team.name}
                 </span>
                 <div className="flex gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={index === 0}
-                    onClick={() => reorderLocal(teamId, "up")}
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={index === queueOrder.length - 1}
-                    onClick={() => reorderLocal(teamId, "down")}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          disabled={index === 0}
+                          onClick={() => reorderLocal(teamId, "up")}
+                        />
+                      }
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>Subir na fila</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          disabled={index === queueOrder.length - 1}
+                          onClick={() => reorderLocal(teamId, "down")}
+                        />
+                      }
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>Descer na fila</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             );

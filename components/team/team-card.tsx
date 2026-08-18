@@ -1,21 +1,24 @@
 "use client";
 
-import {
-  moveTeam,
-  removeTeam,
-  setTeamRoster,
-} from "@/app/(app)/events/[id]/teams/actions";
+import { moveTeam, removeTeam } from "@/app/(app)/events/[id]/teams/actions";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxInputGroup,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/ui/combobox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { EventPlayer, EventTeam } from "@/types/database";
 import { ArrowDown, ArrowUp, Square, Trash2, UserPlus, X } from "lucide-react";
-import { useTransition } from "react";
 
 export type PlayerStat = {
   goals: number;
@@ -33,6 +36,9 @@ export function TeamCard({
   canMoveUp,
   canMoveDown,
   readOnly = false,
+  pending = false,
+  onAddPlayer,
+  onRemovePlayer,
 }: {
   eventId: string;
   team: EventTeam;
@@ -48,9 +54,11 @@ export function TeamCard({
   canMoveUp: boolean;
   canMoveDown: boolean;
   readOnly?: boolean;
+  /** Whether a roster mutation (add/remove) is in flight — disables the picker/remove buttons. */
+  pending?: boolean;
+  onAddPlayer: (playerId: string) => void;
+  onRemovePlayer: (playerId: string) => void;
 }) {
-  const [pending, startTransition] = useTransition();
-  const rosterIds = roster.map((p) => p.id);
   const sortedOtherPlayers = [...otherPlayers].sort((a, b) => {
     const teamCompare = (playerTeamName[a.id] ?? "").localeCompare(
       playerTeamName[b.id] ?? "",
@@ -62,22 +70,6 @@ export function TeamCard({
       a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
     );
   });
-
-  function addPlayer(playerId: string) {
-    startTransition(() =>
-      setTeamRoster(eventId, team.id, [...rosterIds, playerId]),
-    );
-  }
-
-  function removePlayer(playerId: string) {
-    startTransition(() =>
-      setTeamRoster(
-        eventId,
-        team.id,
-        rosterIds.filter((id) => id !== playerId),
-      ),
-    );
-  }
 
   return (
     <div className="rounded-2xl border border-white/10 p-4">
@@ -94,32 +86,53 @@ export function TeamCard({
         </div>
         {!readOnly && (
           <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              disabled={!canMoveUp}
-              onClick={() => moveTeam(eventId, team.id, "up")}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              disabled={!canMoveDown}
-              onClick={() => moveTeam(eventId, team.id, "down")}
-            >
-              <ArrowDown className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => removeTeam(eventId, team.id)}
-            >
-              <Trash2 className="h-4 w-4 text-apito-red" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={!canMoveUp}
+                    onClick={() => moveTeam(eventId, team.id, "up")}
+                  />
+                }
+              >
+                <ArrowUp className="h-4 w-4" />
+              </TooltipTrigger>
+              <TooltipContent>Mover time pra cima</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={!canMoveDown}
+                    onClick={() => moveTeam(eventId, team.id, "down")}
+                  />
+                }
+              >
+                <ArrowDown className="h-4 w-4" />
+              </TooltipTrigger>
+              <TooltipContent>Mover time pra baixo</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeTeam(eventId, team.id)}
+                  />
+                }
+              >
+                <Trash2 className="h-4 w-4 text-apito-red" />
+              </TooltipTrigger>
+              <TooltipContent>Remover time</TooltipContent>
+            </Tooltip>
           </div>
         )}
       </div>
@@ -173,15 +186,22 @@ export function TeamCard({
                     </span>
                   )}
                   {!readOnly && (
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => removePlayer(player.id)}
-                      className="text-muted-foreground hover:text-apito-red"
-                      aria-label={`Tirar ${player.name} do time`}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => onRemovePlayer(player.id)}
+                            className="text-muted-foreground hover:text-apito-red"
+                            aria-label={`Tirar ${player.name} do time`}
+                          />
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>Tirar do time</TooltipContent>
+                    </Tooltip>
                   )}
                 </span>
               </li>
@@ -191,26 +211,32 @@ export function TeamCard({
       )}
 
       {!readOnly && otherPlayers.length > 0 && (
-        <Select
-          value={null}
+        <Combobox<EventPlayer>
+          key={sortedOtherPlayers.length}
+          items={sortedOtherPlayers}
+          itemToStringLabel={(player) => player.name}
           disabled={pending}
-          onValueChange={(id) => id && addPlayer(id)}
+          onValueChange={(player) => player && onAddPlayer(player.id)}
         >
-          <SelectTrigger className="mt-3 w-full">
+          <ComboboxInputGroup className="mt-3 w-full">
             <UserPlus className="h-4 w-4 text-apito-yellow" />
-            <SelectValue placeholder="Adicionar jogador" />
-          </SelectTrigger>
-          <SelectContent>
-            {sortedOtherPlayers.map((player) => (
-              <SelectItem key={player.id} value={player.id}>
-                {player.name}
-                {playerTeamName[player.id]
-                  ? ` · ${playerTeamName[player.id]}`
-                  : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <ComboboxInput placeholder="Adicionar jogador" />
+            <ComboboxTrigger />
+          </ComboboxInputGroup>
+          <ComboboxContent>
+            <ComboboxEmpty>Nenhum jogador encontrado.</ComboboxEmpty>
+            <ComboboxList>
+              {(player: EventPlayer) => (
+                <ComboboxItem key={player.id} value={player}>
+                  {player.name}
+                  {playerTeamName[player.id]
+                    ? ` · ${playerTeamName[player.id]}`
+                    : ""}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       )}
     </div>
   );

@@ -11,30 +11,8 @@ export default async function SummaryPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: eventId } = await params;
-  const supabase = await createClient();
-
-  const [
-    { data: event },
-    { data: standings },
-    { data: scorers },
-    { data: gkStats },
-    { data: teams },
-    { data: results },
-  ] = await Promise.all([
-    supabase.from("events").select("*").eq("id", eventId).single(),
-    supabase.from("event_standings").select("*").eq("event_id", eventId),
-    supabase.from("event_scorers").select("*").eq("event_id", eventId),
-    supabase.from("event_gk_stats").select("*").eq("event_id", eventId),
-    supabase
-      .from("event_teams")
-      .select("id, queue_position, name")
-      .eq("event_id", eventId),
-    supabase
-      .from("match_results")
-      .select("*")
-      .eq("event_id", eventId)
-      .eq("status", "finished"),
-  ]);
+  const { event, standings, scorers, gkStats, teams, results } =
+    await getData(eventId);
 
   if (!event) notFound();
 
@@ -97,4 +75,33 @@ export default async function SummaryPage({
       </div>
     </div>
   );
+}
+
+async function getData(eventId: string) {
+  const supabase = await createClient();
+
+  const [
+    { data: event },
+    { data: standings },
+    { data: scorers },
+    { data: gkStats },
+    { data: teams },
+    { data: results },
+  ] = await Promise.all([
+    supabase.from("events").select("*").eq("id", eventId).single(),
+    supabase.from("event_standings").select("*").eq("event_id", eventId),
+    supabase.from("event_scorers").select("*").eq("event_id", eventId),
+    supabase.from("event_gk_stats").select("*").eq("event_id", eventId),
+    supabase
+      .from("event_teams")
+      .select("id, queue_position, name")
+      .eq("event_id", eventId),
+    supabase
+      .from("match_results")
+      .select("*")
+      .eq("event_id", eventId)
+      .eq("status", "finished"),
+  ]);
+
+  return { event, standings, scorers, gkStats, teams, results };
 }

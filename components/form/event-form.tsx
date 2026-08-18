@@ -1,20 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { DateTimePicker } from "@/components/form/date-time-picker";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import {
   Field,
-  FieldGroup,
-  FieldLabel,
   FieldDescription,
   FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator,
 } from "@/components/ui/field";
-import { DateTimePicker } from "@/components/form/date-time-picker";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { drawRuleLabel } from "@/lib/labels";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
+import type { DrawRule } from "@/types/database";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+
+const DRAW_RULE_OPTIONS: DrawRule[] = [
+  "defender_leaves",
+  "challenger_leaves",
+  "both_leave",
+  "penalties",
+];
 
 export function EventForm({
   defaultValues,
@@ -86,7 +103,10 @@ export function EventForm({
           render={({ field }) => (
             <Field>
               <FieldLabel>Data e hora</FieldLabel>
-              <DateTimePicker value={field.value ?? ""} onChange={field.onChange} />
+              <DateTimePicker
+                value={field.value ?? ""}
+                onChange={field.onChange}
+              />
             </Field>
           )}
         />
@@ -96,7 +116,9 @@ export function EventForm({
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Jogadores de linha por time</FieldLabel>
+              <FieldLabel htmlFor={field.name}>
+                Jogadores de linha por time
+              </FieldLabel>
               <Input
                 id={field.name}
                 name={field.name}
@@ -121,7 +143,10 @@ export function EventForm({
               orientation="horizontal"
               className="rounded-xl border border-white/10 px-4 py-3"
             >
-              <FieldLabel htmlFor={field.name} className="flex-col items-start gap-0">
+              <FieldLabel
+                htmlFor={field.name}
+                className="flex-col items-start gap-0"
+              >
                 Tem goleiro
                 <FieldDescription>
                   Se desligar, todo mundo joga na linha.
@@ -133,6 +158,125 @@ export function EventForm({
                 checked={field.value}
                 onCheckedChange={(checked) => field.onChange(checked === true)}
               />
+            </Field>
+          )}
+        />
+
+        <FieldSeparator />
+
+        <Controller
+          name="drawRule"
+          control={control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>Empate na fila</FieldLabel>
+              <FieldDescription>
+                Decide quem sai da quadra quando a partida termina empatada.
+              </FieldDescription>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id={field.name} className="w-full">
+                  <SelectValue placeholder="Regra de empate">
+                    {(value: DrawRule | null) =>
+                      value ? drawRuleLabel[value] : "Regra de empate"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {DRAW_RULE_OPTIONS.map((rule) => (
+                    <SelectItem key={rule} value={rule}>
+                      {drawRuleLabel[rule]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="maxReign"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>
+                Máximo de partidas seguidas
+              </FieldLabel>
+              <FieldDescription>
+                Time que &quot;fica&quot; esse tanto de vezes seguidas vai pro
+                fim da fila mesmo ganhando.
+              </FieldDescription>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="number"
+                min={1}
+                placeholder="Sem limite"
+                value={field.value ?? ""}
+                onChange={(e) =>
+                  field.onChange(
+                    e.target.value === "" ? null : e.target.valueAsNumber,
+                  )
+                }
+                onBlur={field.onBlur}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="matchDurationMs"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>
+                Duração da partida (minutos)
+              </FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="number"
+                min={1}
+                placeholder="Sem limite"
+                value={field.value == null ? "" : field.value / 60000}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    field.onChange(null);
+                    return;
+                  }
+                  field.onChange(Math.round(e.target.valueAsNumber * 60000));
+                }}
+                onBlur={field.onBlur}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="goalLimit"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor={field.name}>Limite de gols</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="number"
+                min={1}
+                placeholder="Sem limite"
+                value={field.value ?? ""}
+                onChange={(e) =>
+                  field.onChange(
+                    e.target.value === "" ? null : e.target.valueAsNumber,
+                  )
+                }
+                onBlur={field.onBlur}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
             </Field>
           )}
         />

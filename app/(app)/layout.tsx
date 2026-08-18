@@ -10,10 +10,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getData();
 
   if (!user) {
     redirect("/login");
@@ -32,4 +29,13 @@ export default async function AppLayout({
       </div>
     </QueryProvider>
   );
+}
+
+async function getData() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { user };
 }

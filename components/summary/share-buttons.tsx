@@ -1,6 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Download, Share2 } from "lucide-react";
 import { useState } from "react";
 
@@ -56,25 +61,37 @@ export function ShareButtons({
 
   return (
     <div className="flex gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        disabled={exporting}
-        onClick={downloadResult}
-      >
-        <Download className="h-4 w-4" />
-        {/* {exporting ? "Gerando..." : "Baixar resultado"} */}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={exporting}
+              onClick={downloadResult}
+            />
+          }
+        >
+          <Download className="h-4 w-4" />
+        </TooltipTrigger>
+        <TooltipContent>Baixar resultado</TooltipContent>
+      </Tooltip>
 
-      <Button
-        type="button"
-        variant="outline"
-        disabled={exporting}
-        onClick={shareResult}
-      >
-        <Share2 className="h-4 w-4" />
-        {/* {exporting ? "Gerando..." : "Compartilhar no zap"} */}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={exporting}
+              onClick={shareResult}
+            />
+          }
+        >
+          <Share2 className="h-4 w-4" />
+        </TooltipTrigger>
+        <TooltipContent>Compartilhar no zap</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

@@ -14,6 +14,31 @@ export const eventSchema = z.object({
     .min(1, { error: "Pelo menos 1 jogador de linha por time." })
     .max(11, { error: "Máximo de 11 jogadores de linha por time." }),
   has_goalkeeper: z.boolean(),
+  // Rules (EventRules in types/database.ts) flattened onto the same form —
+  // one submit for the whole event, event.rules is assembled from these
+  // four fields in createEvent/updateEvent.
+  drawRule: z.enum([
+    "both_leave",
+    "defender_leaves",
+    "challenger_leaves",
+    "penalties",
+  ]),
+  // Nulls mean "sem limite" — left unset on purpose, not a 0/blank default.
+  maxReign: z
+    .number()
+    .int()
+    .min(1, { error: "Pelo menos 1 partida." })
+    .nullable(),
+  matchDurationMs: z
+    .number()
+    .int()
+    .min(1, { error: "A duração precisa ser maior que zero." })
+    .nullable(),
+  goalLimit: z
+    .number()
+    .int()
+    .min(1, { error: "Pelo menos 1 gol." })
+    .nullable(),
 });
 
 export type EventInput = z.infer<typeof eventSchema>;

@@ -19,6 +19,10 @@ export default function NewEventPage() {
             scheduled_at: "",
             team_size: 5,
             has_goalkeeper: true,
+            drawRule: "defender_leaves",
+            maxReign: null,
+            matchDurationMs: null,
+            goalLimit: null,
           }}
           onSubmit={createEvent}
           submitLabel="Criar pelada"

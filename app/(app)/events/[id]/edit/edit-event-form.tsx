@@ -46,6 +46,10 @@ export function EditEventForm({
                   scheduled_at: event.scheduled_at ?? "",
                   team_size: event.team_size,
                   has_goalkeeper: event.has_goalkeeper,
+                  drawRule: event.rules.drawRule,
+                  maxReign: event.rules.maxReign,
+                  matchDurationMs: event.rules.matchDurationMs,
+                  goalLimit: event.rules.goalLimit,
                 }}
                 onSubmit={(values) => updateEvent(event.id, values)}
                 submitLabel="Salvar alterações"

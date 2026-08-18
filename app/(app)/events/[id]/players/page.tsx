@@ -1,6 +1,11 @@
 import { PlayerMembershipButton } from "@/components/event/player-membership-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { playerStatusLabel } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import type { EventScorerRow } from "@/types/database";
@@ -16,28 +21,7 @@ export default async function PlayersPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: eventId } = await params;
-  const supabase = await createClient();
-  const [
-    { data: players },
-    { data: event },
-    { data: scorers },
-    {
-      data: { user },
-    },
-  ] = await Promise.all([
-    supabase
-      .from("event_players")
-      .select("*")
-      .eq("event_id", eventId)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("events")
-      .select("status, owner_id")
-      .eq("id", eventId)
-      .single(),
-    supabase.from("event_scorers").select("*").eq("event_id", eventId),
-    supabase.auth.getUser(),
-  ]);
+  const { players, event, scorers, user } = await getData(eventId);
 
   const statsByPlayer = new Map<string, EventScorerRow>(
     (scorers ?? []).map((s) => [s.player_id, s]),
@@ -176,9 +160,16 @@ export default async function PlayersPage({
 
                 {!readOnly && (
                   <form action={removePlayer.bind(null, eventId, player.id)}>
-                    <Button type="submit" variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4 text-apito-red" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button type="submit" variant="ghost" size="icon" />
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 text-apito-red" />
+                      </TooltipTrigger>
+                      <TooltipContent>Remover jogador</TooltipContent>
+                    </Tooltip>
                   </form>
                 )}
               </div>
@@ -188,4 +179,31 @@ export default async function PlayersPage({
       </ul>
     </div>
   );
+}
+
+async function getData(eventId: string) {
+  const supabase = await createClient();
+  const [
+    { data: players },
+    { data: event },
+    { data: scorers },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase
+      .from("event_players")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("events")
+      .select("status, owner_id")
+      .eq("id", eventId)
+      .single(),
+    supabase.from("event_scorers").select("*").eq("event_id", eventId),
+    supabase.auth.getUser(),
+  ]);
+
+  return { players, event, scorers, user };
 }

@@ -8,10 +8,7 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getData();
 
   if (user) {
     redirect("/events");
@@ -29,4 +26,13 @@ export default async function AuthLayout({
       <div className="w-full max-w-sm">{children}</div>
     </div>
   );
+}
+
+async function getData() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { user };
 }

@@ -5,18 +5,9 @@ import { LogoutButton } from "@/components/layout/logout-button";
 import { ProfileForm } from "./profile-form";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, profile } = await getData();
 
   if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("custom_name, rating")
-    .eq("user_id", user.id)
-    .maybeSingle();
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,4 +30,21 @@ export default async function ProfilePage() {
       <LogoutButton />
     </div>
   );
+}
+
+async function getData() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { user: null, profile: null };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("custom_name, rating")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  return { user, profile };
 }
