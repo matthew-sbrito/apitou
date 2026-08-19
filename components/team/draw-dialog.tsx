@@ -49,7 +49,7 @@ export function DrawDialog({
   matchesStarted?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [teamCount, setTeamCount] = useState(2);
+  const [teamCount, setTeamCount] = useState<number | "">(2);
   const [preview, setPreview] = useState<EventPlayer[][] | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export function DrawDialog({
   );
 
   function draw() {
-    setPreview(drawTeams(players, teamCount, teamSize, hasGoalkeeper));
+    setPreview(drawTeams(players, teamCount || 2, teamSize, hasGoalkeeper));
   }
 
   function confirm() {
@@ -123,7 +123,16 @@ export function DrawDialog({
               min={2}
               max={6}
               value={teamCount}
-              onChange={(e) => setTeamCount(Number(e.target.value) || 2)}
+              onChange={(e) =>
+                setTeamCount(
+                  e.target.value === "" ? "" : Number(e.target.value),
+                )
+              }
+              onBlur={() =>
+                setTeamCount((c) =>
+                  Math.min(6, Math.max(2, Number(c) || 2)),
+                )
+              }
             />
           </div>
 

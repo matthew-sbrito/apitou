@@ -1,9 +1,9 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { sanitizeNextPath } from "@/lib/auth/next-path";
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
+import { redirect } from "next/navigation";
 
 export type LoginState = { error: string } | undefined;
 
