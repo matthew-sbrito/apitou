@@ -48,7 +48,7 @@ export default async function EventDashboardPage({
   const hasLocation = event.latitude != null && event.longitude != null;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">
@@ -90,7 +90,7 @@ export default async function EventDashboardPage({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
         {hasLocation ? (
           <Button
             render={
