@@ -19,16 +19,17 @@ export async function createClient() {
               cookieStore.set(name, value, options);
             }
           } catch {
-            // Called from a Server Component with no request/response to write
-            // cookies to. There's no middleware on this deployment target to
-            // refresh sessions on navigation (Cloudflare Workers can't run
-            // Next.js 16's Node.js-runtime-only Proxy) — instead
-            // components/providers/session-keeper.tsx pings
-            // app/api/auth/refresh/route.ts (a Route Handler, which *can*
-            // persist cookies) on mount/visibility/interval to keep the
-            // session refreshed. This catch just guards the narrow gap that
-            // remains: a Server Component render whose access token happens
-            // to be expired before that refresh runs.
+            // Called from a Server Component with no request/response to
+            // write cookies to. middleware.ts (lib/supabase/middleware.ts)
+            // refreshes and persists the session cookie before any Server
+            // Component renders, so getUser() here should normally find an
+            // already-fresh token and never need to write one. This catch
+            // just guards the residual gap: an access token expiring
+            // between the middleware refresh and this render. Long-idle
+            // tabs (no navigation to trigger middleware) are covered
+            // separately by components/providers/session-keeper.tsx, which
+            // pings app/api/auth/refresh/route.ts (a Route Handler, which
+            // *can* persist cookies) on mount/visibility/interval.
           }
         },
       },
