@@ -104,12 +104,16 @@ export default async function EventDashboardPage({
             variant="default"
           >
             <MapPin className="h-4 w-4" />
-            {event.location || "Local da pelada"}
+            <span className="max-w-40 sm:max-w-60 truncate">
+              {event.location || "Local da pelada"}
+            </span>
           </Button>
         ) : (
           <span className="flex items-center gap-1.5">
             <MapPin className="h-4 w-4 text-apito-yellow" />
-            {event.location || "Local a definir"}
+            <span className="max-w-40 sm:max-w-60 truncate">
+              {event.location || "Local a definir"}
+            </span>
           </span>
         )}
 

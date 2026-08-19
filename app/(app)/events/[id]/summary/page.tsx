@@ -35,32 +35,13 @@ export default async function SummaryPage({
   const longestReign = reignEntries.sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">
             Súmula
           </h1>
           <p className="text-sm text-muted-foreground">{event.name}</p>
-          {(event.location ||
-            (event.latitude != null && event.longitude != null)) && (
-            <p className="text-sm text-muted-foreground">
-              {event.location}
-              {event.latitude != null && event.longitude != null && (
-                <>
-                  {event.location ? " · " : null}
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground"
-                  >
-                    ver no mapa
-                  </a>
-                </>
-              )}
-            </p>
-          )}
         </div>
         <ShareButtons eventName={event.name} elementRefId="share-container" />
       </div>

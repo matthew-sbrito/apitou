@@ -36,14 +36,14 @@ export default async function EventsPage() {
                 <div className="flex flex-col gap-1">
                   <p className="font-semibold">{event.name}</p>
                   <div className="flex items-center gap-1 ">
-                    <LocationEdit className="h-4 w-4 text-apito-yellow" />
-                    <span className="text-sm text-muted-foreground">
+                    <LocationEdit className="h-4 w-4 text-apito-yellow shrink-0" />
+                    <span className="max-w-40 sm:max-w-full truncate text-sm text-muted-foreground">
                       {event.location || "Local a definir"}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 ">
-                    <CalendarClock className="h-4 w-4 text-apito-yellow" />
-                    <span className="text-sm text-muted-foreground">
+                    <CalendarClock className="h-4 w-4 text-apito-yellow shrink-0" />
+                    <span className="max-w-40 sm:max-w-full truncate text-sm text-muted-foreground">
                       {event.scheduled_at
                         ? formatEventDateTime(event.scheduled_at)
                         : "Data a definir"}
