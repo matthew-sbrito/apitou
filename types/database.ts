@@ -1,4 +1,5 @@
-// Hand-written to mirror supabase/migrations/0001_init.sql — there is no live
+// Hand-written to mirror supabase/migrations/0001_init.sql (plus later
+// additive migrations, e.g. 0006_event_geolocation.sql) — there is no live
 // project to run `supabase gen types` against yet. Keep these two in sync.
 
 export type EventStatus = "draft" | "running" | "finished";
@@ -53,6 +54,8 @@ export type Event = {
   owner_id: string;
   name: string;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   scheduled_at: string | null;
   team_size: number;
   has_goalkeeper: boolean;

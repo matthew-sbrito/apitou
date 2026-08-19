@@ -43,6 +43,8 @@ export function EditEventForm({
                 defaultValues={{
                   name: event.name,
                   location: event.location ?? "",
+                  latitude: event.latitude ?? null,
+                  longitude: event.longitude ?? null,
                   scheduled_at: event.scheduled_at ?? "",
                   team_size: event.team_size,
                   has_goalkeeper: event.has_goalkeeper,

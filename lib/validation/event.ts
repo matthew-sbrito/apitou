@@ -3,6 +3,11 @@ import { z } from "zod";
 export const eventSchema = z.object({
   name: z.string().trim().min(2, { error: "Dá um nome pra pelada." }),
   location: z.string().trim().optional(),
+  // Independent of `location` — set only by the map picker, never typed.
+  // Nullable rather than optional, matching maxReign/matchDurationMs/
+  // goalLimit below (null = "not set").
+  latitude: z.number().min(-90).max(90).nullable(),
+  longitude: z.number().min(-180).max(180).nullable(),
   scheduled_at: z.string().optional(),
   // Not z.coerce.number(): the form already produces a real number via
   // `valueAsNumber` in the Controller's onChange, so input type === output

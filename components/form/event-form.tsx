@@ -1,6 +1,7 @@
 "use client";
 
 import { DateTimePicker } from "@/components/form/date-time-picker";
+import { LocationMapPicker } from "@/components/form/location-map-picker";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -86,12 +87,15 @@ export function EventForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor={field.name}>Local</FieldLabel>
-              <Input
-                {...field}
-                id={field.name}
-                placeholder="Quadra do bairro"
-                aria-invalid={fieldState.invalid}
-              />
+              <div className="flex gap-2">
+                <Input
+                  {...field}
+                  id={field.name}
+                  placeholder="Quadra do bairro"
+                  aria-invalid={fieldState.invalid}
+                />
+                <LocationMapPicker control={control} />
+              </div>
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}

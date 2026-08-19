@@ -22,6 +22,8 @@ export async function updateEvent(
   const {
     name,
     location,
+    latitude,
+    longitude,
     scheduled_at,
     team_size,
     has_goalkeeper,
@@ -37,6 +39,9 @@ export async function updateEvent(
     .update({
       name,
       location: location || null,
+      // ?? not || — 0 is a valid coordinate near the equator/prime meridian.
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
       scheduled_at: scheduled_at ? new Date(scheduled_at).toISOString() : null,
       team_size,
       has_goalkeeper,
@@ -110,7 +115,9 @@ export async function cloneEvent(eventId: string) {
     await Promise.all([
       supabase
         .from("events")
-        .select("name, location, team_size, has_goalkeeper, rules")
+        .select(
+          "name, location, latitude, longitude, team_size, has_goalkeeper, rules",
+        )
         .eq("id", eventId)
         .single(),
       supabase
@@ -129,6 +136,8 @@ export async function cloneEvent(eventId: string) {
       owner_id: user.id,
       name: `${source.name} (cópia)`,
       location: source.location,
+      latitude: source.latitude,
+      longitude: source.longitude,
       team_size: source.team_size,
       has_goalkeeper: source.has_goalkeeper,
       rules: source.rules,

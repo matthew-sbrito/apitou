@@ -98,7 +98,10 @@ function ComboboxEmpty({ className, ...props }: ComboboxPrimitive.Empty.Props) {
     <ComboboxPrimitive.Empty
       data-slot="combobox-empty"
       className={cn(
-        "px-2 py-4 text-center text-sm text-muted-foreground",
+        // Base UI keeps this mounted with empty children when there are
+        // results (required for its aria-live announcements) — collapse the
+        // padding via :empty so it doesn't sit as a blank block above the list.
+        "px-2 py-4 text-center text-sm text-muted-foreground empty:p-0",
         className
       )}
       {...props}

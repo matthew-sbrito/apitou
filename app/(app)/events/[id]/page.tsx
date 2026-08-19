@@ -17,6 +17,7 @@ import { eventStatusLabel } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import {
   CalendarClock,
+  MapPin,
   Pencil,
   PlayCircle,
   ScrollText,
@@ -44,16 +45,15 @@ export default async function EventDashboardPage({
       ? currentMatch.id
       : null;
 
+  const hasLocation = event.latitude != null && event.longitude != null;
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">
             {event.name}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {event.location || "Local a definir"}
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{eventStatusLabel[event.status]}</Badge>
@@ -90,7 +90,29 @@ export default async function EventDashboardPage({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-4 text-sm text-muted-foreground">
+        {hasLocation ? (
+          <Button
+            render={
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+              />
+            }
+            nativeButton={false}
+            variant="default"
+          >
+            <MapPin className="h-4 w-4" />
+            {event.location || "Local da pelada"}
+          </Button>
+        ) : (
+          <span className="flex items-center gap-1.5">
+            <MapPin className="h-4 w-4 text-apito-yellow" />
+            {event.location || "Local a definir"}
+          </span>
+        )}
+
         <span className="flex items-center gap-1.5">
           <CalendarClock className="h-4 w-4 text-apito-yellow" />
           {event.scheduled_at

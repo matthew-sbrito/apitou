@@ -42,6 +42,25 @@ export default async function SummaryPage({
             Súmula
           </h1>
           <p className="text-sm text-muted-foreground">{event.name}</p>
+          {(event.location ||
+            (event.latitude != null && event.longitude != null)) && (
+            <p className="text-sm text-muted-foreground">
+              {event.location}
+              {event.latitude != null && event.longitude != null && (
+                <>
+                  {event.location ? " · " : null}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    ver no mapa
+                  </a>
+                </>
+              )}
+            </p>
+          )}
         </div>
         <ShareButtons eventName={event.name} elementRefId="share-container" />
       </div>

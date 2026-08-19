@@ -25,6 +25,8 @@ export async function createEvent(values: EventInput): Promise<EventFormState> {
   const {
     name,
     location,
+    latitude,
+    longitude,
     scheduled_at,
     team_size,
     has_goalkeeper,
@@ -40,6 +42,9 @@ export async function createEvent(values: EventInput): Promise<EventFormState> {
       owner_id: user.id,
       name,
       location: location || null,
+      // ?? not || — 0 is a valid coordinate near the equator/prime meridian.
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
       scheduled_at: scheduled_at
         ? new Date(scheduled_at).toISOString()
         : null,

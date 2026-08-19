@@ -16,6 +16,8 @@ export default function NewEventPage() {
           defaultValues={{
             name: "",
             location: "",
+            latitude: null,
+            longitude: null,
             scheduled_at: "",
             team_size: 5,
             has_goalkeeper: true,
