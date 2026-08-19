@@ -1,12 +1,16 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { sanitizeNextPath } from "@/lib/auth/next-path";
 import { createClient } from "@/lib/supabase/server";
 import { signupSchema, type SignupInput } from "@/lib/validation/auth";
 
 export type SignupState = { error?: string; success?: boolean } | undefined;
 
-export async function signup(values: SignupInput): Promise<SignupState> {
+export async function signup(
+  values: SignupInput,
+  next?: string,
+): Promise<SignupState> {
   // Defense in depth — react-hook-form + zodResolver already validated
   // this client-side before calling here.
   const parsed = signupSchema.safeParse(values);
@@ -17,6 +21,8 @@ export async function signup(values: SignupInput): Promise<SignupState> {
 
   const { name, email, password } = parsed.data;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const callbackUrl = new URL("/callback", siteUrl);
+  callbackUrl.searchParams.set("next", sanitizeNextPath(next));
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signUp({
@@ -24,7 +30,7 @@ export async function signup(values: SignupInput): Promise<SignupState> {
     password,
     options: {
       data: { name },
-      emailRedirectTo: `${siteUrl}/callback`,
+      emailRedirectTo: callbackUrl.toString(),
     },
   });
 
@@ -43,5 +49,5 @@ export async function signup(values: SignupInput): Promise<SignupState> {
     return { success: true };
   }
 
-  redirect("/events");
+  redirect(sanitizeNextPath(next));
 }

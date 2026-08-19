@@ -26,7 +26,7 @@ export default async function JoinEventPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect(`/login?next=/events/${eventId}/join`);
 
   const { error } = await supabase
     .from("event_members")
