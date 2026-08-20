@@ -1,4 +1,4 @@
-import { getScorersList, joinNames } from "@/lib/scorers";
+import { getAssistsList, getGoalsList, joinNames } from "@/lib/scorers";
 import { cn } from "@/lib/utils";
 import type {
   EventGkStatsRow,
@@ -96,7 +96,7 @@ export function SummarySections({
       <section>
         <h2 className="mb-3 text-lg font-semibold">Artilharia</h2>
         <ul className="flex flex-col gap-2">
-          {getScorersList(scorers)
+          {getGoalsList(scorers)
             .slice(0, 10)
             .map((s) => (
               <li
@@ -104,10 +104,24 @@ export function SummarySections({
                 className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-2 text-sm"
               >
                 <span>{s.player_name}</span>
-                <span className="flex gap-1 text-muted-foreground">
-                  {s.assists > 0 && <span>{s.assists} 👟</span>}
-                  {s.goals > 0 && <span>{s.goals} ⚽</span>}
-                </span>
+                <span className="text-muted-foreground">{s.goals} ⚽</span>
+              </li>
+            ))}
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">Assistências</h2>
+        <ul className="flex flex-col gap-2">
+          {getAssistsList(scorers)
+            .slice(0, 10)
+            .map((s) => (
+              <li
+                key={s.player_id}
+                className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-2 text-sm"
+              >
+                <span>{s.player_name}</span>
+                <span className="text-muted-foreground">{s.assists} 👟</span>
               </li>
             ))}
         </ul>

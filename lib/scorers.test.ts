@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  getScorersList,
+  getAssistsList,
+  getGoalsList,
   getTopGoalkeepers,
   getTopScorers,
   joinNames,
@@ -75,26 +76,52 @@ describe("getTopScorers", () => {
   });
 });
 
-describe("getScorersList", () => {
-  it("excludes players with no goals and no assists", () => {
+describe("getGoalsList", () => {
+  it("excludes players with no goals", () => {
     const scorers = [
-      scorer({ player_id: "a", goals: 0, assists: 0, fouls: 2 }),
+      scorer({ player_id: "a", goals: 0, assists: 3 }),
       scorer({ player_id: "b", goals: 1, assists: 0 }),
     ];
-    expect(getScorersList(scorers).map((s) => s.player_id)).toEqual(["b"]);
+    expect(getGoalsList(scorers).map((s) => s.player_id)).toEqual(["b"]);
   });
 
-  it("keeps players with only an assist and no goals", () => {
-    const scorers = [scorer({ player_id: "a", goals: 0, assists: 1 })];
-    expect(getScorersList(scorers).map((s) => s.player_id)).toEqual(["a"]);
-  });
-
-  it("returns an empty array when nobody scored or assisted", () => {
+  it("returns an empty array when nobody scored", () => {
     const scorers = [
       scorer({ player_id: "a", yellow_cards: 1 }),
       scorer({ player_id: "b", red_cards: 1 }),
     ];
-    expect(getScorersList(scorers)).toEqual([]);
+    expect(getGoalsList(scorers)).toEqual([]);
+  });
+});
+
+describe("getAssistsList", () => {
+  it("excludes players with no assists", () => {
+    const scorers = [
+      scorer({ player_id: "a", goals: 3, assists: 0 }),
+      scorer({ player_id: "b", goals: 0, assists: 1 }),
+    ];
+    expect(getAssistsList(scorers).map((s) => s.player_id)).toEqual(["b"]);
+  });
+
+  it("returns an empty array when nobody assisted", () => {
+    const scorers = [
+      scorer({ player_id: "a", yellow_cards: 1 }),
+      scorer({ player_id: "b", red_cards: 1 }),
+    ];
+    expect(getAssistsList(scorers)).toEqual([]);
+  });
+
+  it("ranks players by assists desc, independent of the input order", () => {
+    const scorers = [
+      scorer({ player_id: "a", assists: 1 }),
+      scorer({ player_id: "b", assists: 3 }),
+      scorer({ player_id: "c", assists: 2 }),
+    ];
+    expect(getAssistsList(scorers).map((s) => s.player_id)).toEqual([
+      "b",
+      "c",
+      "a",
+    ]);
   });
 });
 

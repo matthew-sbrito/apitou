@@ -7,10 +7,18 @@ export function getTopScorers(scorers: EventScorerRow[]): EventScorerRow[] {
   return scorers.filter((s) => s.goals === max);
 }
 
-/** Scorers with at least one goal or assist, for the "Artilharia" list —
- * `event_scorers` also includes players whose only events were cards/fouls. */
-export function getScorersList(scorers: EventScorerRow[]): EventScorerRow[] {
-  return scorers.filter((s) => s.goals > 0 || s.assists > 0);
+/** Scorers with at least one goal, for the "Artilharia" list — `event_scorers`
+ * is already ordered by goals desc, so no re-sort is needed here. */
+export function getGoalsList(scorers: EventScorerRow[]): EventScorerRow[] {
+  return scorers.filter((s) => s.goals > 0);
+}
+
+/** Players with at least one assist, for the "Assistências" list, ranked by
+ * assists desc — `event_scorers` is ordered by goals desc, not assists. */
+export function getAssistsList(scorers: EventScorerRow[]): EventScorerRow[] {
+  return [...scorers.filter((s) => s.assists > 0)].sort(
+    (a, b) => b.assists - a.assists,
+  );
 }
 
 /** All goalkeepers tied for fewest goals conceded, among those who played. */
