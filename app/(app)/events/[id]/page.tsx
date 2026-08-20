@@ -132,7 +132,9 @@ export default async function EventDashboardPage({
 
       {isOwner ? (
         <div className="flex flex-wrap items-center gap-2">
-          {event.status === "draft" && <StartEventButton eventId={id} />}
+          {event.status === "draft" && (
+            <StartEventButton eventId={id} hasTeams={(teamCount ?? 0) > 0} />
+          )}
           {event.status === "running" && (
             <FinishEventButton eventId={id} activeMatchId={activeMatchId} />
           )}

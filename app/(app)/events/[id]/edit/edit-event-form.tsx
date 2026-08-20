@@ -11,9 +11,11 @@ import type { Event } from "@/types/database";
 export function EditEventForm({
   event,
   isOwner,
+  hasTeams,
 }: {
   event: Event;
   isOwner: boolean;
+  hasTeams: boolean;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -65,7 +67,7 @@ export function EditEventForm({
                     qualquer momento — antes ou depois do horário combinado,
                     sem problema.
                   </p>
-                  <StartEventButton eventId={event.id} />
+                  <StartEventButton eventId={event.id} hasTeams={hasTeams} />
                 </div>
               )}
             </>
