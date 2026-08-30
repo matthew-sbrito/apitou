@@ -22,6 +22,9 @@ export type MatchStoreActions = {
   addEvent: (event: MatchEvent) => void;
   setPlayerStatus: (playerId: string, status: EventPlayer["status"]) => void;
   addLineup: (lineup: MatchLineup) => void;
+  removeLineup: (lineupId: string) => void;
+  /** `teamId: null` clears the player's persistent team (no team). */
+  setTeamAssignment: (playerId: string, teamId: string | null) => void;
   setClockOffset: (offsetMs: number) => void;
 };
 
@@ -56,6 +59,20 @@ export function createMatchStore(initial: MatchStoreState) {
             }
           : state.players,
       })),
+    removeLineup: (lineupId) =>
+      set((state) => ({
+        lineups: state.lineups.filter((l) => l.id !== lineupId),
+      })),
+    setTeamAssignment: (playerId, teamId) =>
+      set((state) => {
+        if (teamId == null) {
+          const { [playerId]: _removed, ...rest } = state.teamAssignments;
+          return { teamAssignments: rest };
+        }
+        return {
+          teamAssignments: { ...state.teamAssignments, [playerId]: teamId },
+        };
+      }),
     setClockOffset: (offsetMs) => set({ clockOffset: offsetMs }),
   }));
 }

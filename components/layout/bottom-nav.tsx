@@ -16,7 +16,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { suffix: "", label: "Visão geral", icon: LayoutDashboard },
   { suffix: "/players", label: "Jogadores", icon: Users },
-  { suffix: "/teams", label: "Banco", icon: Shirt },
+  { suffix: "/teams", label: "Times", icon: Shirt },
   { suffix: "/matches", label: "Partidas", icon: Swords },
   { suffix: "/summary", label: "Súmula", icon: ScrollText },
 ];

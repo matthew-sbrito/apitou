@@ -22,7 +22,9 @@ export function getAssistsList(scorers: EventScorerRow[]): EventScorerRow[] {
 }
 
 /** All goalkeepers tied for fewest goals conceded, among those who played. */
-export function getTopGoalkeepers(gkStats: EventGkStatsRow[]): EventGkStatsRow[] {
+export function getTopGoalkeepers(
+  gkStats: EventGkStatsRow[],
+): EventGkStatsRow[] {
   const eligible = gkStats.filter((g) => g.matches_played > 0);
   if (eligible.length === 0) return [];
   const min = Math.min(...eligible.map((g) => g.goals_against));

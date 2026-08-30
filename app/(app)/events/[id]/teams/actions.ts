@@ -141,6 +141,43 @@ export async function moveTeam(
   revalidatePath(`/events/${eventId}/teams`);
 }
 
+/** Swaps `queue_position` between exactly these two teams. Used by the
+ * "Banco" list on the next-match screen, where the visually-adjacent team
+ * (the previous/next one still on the bench) isn't necessarily adjacent by
+ * `queue_position` once the operator has manually picked mandante/visitante
+ * — those two sit in the full position order too, so `moveTeam`'s "swap
+ * with whoever is physically next" would silently swap with an on-court
+ * team instead of the intended bench neighbor. */
+export async function swapQueuePositions(
+  eventId: string,
+  teamAId: string,
+  teamBId: string,
+) {
+  const supabase = await createClient();
+  const { data: teams } = await supabase
+    .from("event_teams")
+    .select("id, queue_position")
+    .eq("event_id", eventId)
+    .in("id", [teamAId, teamBId]);
+
+  const a = teams?.find((t) => t.id === teamAId);
+  const b = teams?.find((t) => t.id === teamBId);
+  if (!a || !b) return;
+
+  // Bump `a` out of the way first — (event_id, queue_position) is unique.
+  await supabase.from("event_teams").update({ queue_position: -1 }).eq("id", a.id);
+  await supabase
+    .from("event_teams")
+    .update({ queue_position: a.queue_position })
+    .eq("id", b.id);
+  await supabase
+    .from("event_teams")
+    .update({ queue_position: b.queue_position })
+    .eq("id", a.id);
+
+  revalidatePath(`/events/${eventId}/teams`);
+}
+
 /** Moves the given players onto `teamId`, pulling them off any other team. */
 export async function setTeamRoster(
   eventId: string,

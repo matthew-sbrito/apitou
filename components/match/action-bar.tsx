@@ -2,9 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Flag, Square, Pause } from "lucide-react";
+import { Flag, Square, Pause, Wrench } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useMatchStore } from "@/components/match/match-store-provider";
 import { useMatchActions } from "@/hooks/use-match-actions";
+import { MatchAdjustments } from "@/components/match/match-adjustments";
 import {
   PlayerActionDialog,
   type TeamRoster,
@@ -15,9 +22,14 @@ export function ActionBar() {
   const awayTeam = useMatchStore((s) => s.awayTeam);
   const lineups = useMatchStore((s) => s.lineups);
   const players = useMatchStore((s) => s.players);
+  const allPlayers = useMatchStore((s) => s.allPlayers);
+  const allTeams = useMatchStore((s) => s.allTeams);
+  const teamAssignments = useMatchStore((s) => s.teamAssignments);
+  const events = useMatchStore((s) => s.events);
   const actions = useMatchActions();
 
   const [dialog, setDialog] = useState<"goal" | "foul" | "card" | null>(null);
+  const [adjustOpen, setAdjustOpen] = useState(false);
 
   const rosters: TeamRoster[] = useMemo(() => {
     return [homeTeam, awayTeam].map((team) => ({
@@ -49,16 +61,46 @@ export function ActionBar() {
         />
       </div>
 
-      <Button
-        type="button"
-        size="lg"
-        variant="secondary"
-        className="w-full"
-        onClick={() => actions.pause("manual")}
-      >
-        <Pause className="h-5 w-5" />
-        Bola parada
-      </Button>
+      <div className="flex gap-3">
+        <Button
+          type="button"
+          size="lg"
+          variant="secondary"
+          className="flex-1"
+          onClick={() => actions.pause("manual")}
+        >
+          <Pause className="h-5 w-5" />
+          Bola parada
+        </Button>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          onClick={() => setAdjustOpen(true)}
+          aria-label="Ajustes"
+        >
+          <Wrench className="h-5 w-5" />
+        </Button>
+      </div>
+
+      <Sheet open={adjustOpen} onOpenChange={setAdjustOpen}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Ajustes</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pb-4">
+            <MatchAdjustments
+              rosters={rosters}
+              allPlayers={allPlayers}
+              allTeams={allTeams}
+              lineups={lineups}
+              teamAssignments={teamAssignments}
+              events={events}
+              players={players}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <PlayerActionDialog
         open={dialog === "goal"}

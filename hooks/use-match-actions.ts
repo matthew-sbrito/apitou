@@ -208,28 +208,70 @@ export function useMatchActions() {
     [elapsedNow, record, setPlayerStatus, store],
   );
 
-  /** Adds a player to a team's current lineup with no departing player and
-   * no injury — for when a team simply starts/continues short-handed and
-   * needs to fill the gap (bench player or one borrowed from a team that
-   * isn't playing right now), as opposed to `recordInjury`'s "someone got
-   * hurt" flow. */
-  const addPlayerToLineup = useCallback(
-    async (opts: { teamId: string; playerId: string; role?: "line" | "gk" }) => {
-      const clockMs = elapsedNow();
-      await record("sub_in", { teamId: opts.teamId, playerId: opts.playerId, clockMs });
-
+  /** Moves a player onto `toTeamId` for good — updates the event-wide
+   * persistent roster (`event_team_players`), not just this match's
+   * lineup. `toTeamId: null` instead takes the player off their team
+   * entirely (free agent, no persistent team) without assigning a new one.
+   * Replaces the old "borrow" flow: a player pulled in to complete a
+   * short-handed team now actually belongs to that team going forward,
+   * instead of snapping back to their old team on the next match. Safe to
+   * call in any match status: `scheduled` (before kickoff — no clock yet,
+   * so no match_events are written) or `running`/`paused` (records
+   * sub_out/sub_in for the audit trail, same as `recordInjury`'s sub
+   * flow). Also covers moving a player directly between the two teams
+   * currently on court, which the bench-only substitute pools never did. */
+  const movePlayerToTeam = useCallback(
+    async (opts: { playerId: string; toTeamId: string | null }) => {
+      const { playerId, toTeamId } = opts;
       const supabase = createClient();
-      const { data: newLineup } = await supabase
-        .from("match_lineups")
-        .insert({
-          match_id: store.match.id,
-          event_team_id: opts.teamId,
-          event_player_id: opts.playerId,
-          role: opts.role ?? "line",
-        })
-        .select("*")
-        .single();
-      if (newLineup) store.addLineup(newLineup);
+      const startedClock = store.match.status !== "scheduled";
+      const clockMs = startedClock ? elapsedNow() : undefined;
+
+      await supabase.from("event_team_players").delete().eq("event_player_id", playerId);
+      if (toTeamId) {
+        await supabase
+          .from("event_team_players")
+          .insert({ event_team_id: toTeamId, event_player_id: playerId });
+      }
+      store.setTeamAssignment(playerId, toTeamId);
+
+      const matchTeamIds = new Set([store.homeTeam.id, store.awayTeam.id]);
+      const currentLineup = store.lineups.find((l) => l.event_player_id === playerId);
+
+      if (currentLineup && currentLineup.event_team_id !== toTeamId) {
+        await supabase.from("match_lineups").delete().eq("id", currentLineup.id);
+        store.removeLineup(currentLineup.id);
+        if (startedClock) {
+          await record("sub_out", {
+            teamId: currentLineup.event_team_id,
+            playerId,
+            clockMs,
+            reason: "substitution",
+          });
+        }
+      }
+
+      if (
+        toTeamId &&
+        matchTeamIds.has(toTeamId) &&
+        (!currentLineup || currentLineup.event_team_id !== toTeamId)
+      ) {
+        const player = store.allPlayers.find((p) => p.id === playerId);
+        const { data: newLineup } = await supabase
+          .from("match_lineups")
+          .insert({
+            match_id: store.match.id,
+            event_team_id: toTeamId,
+            event_player_id: playerId,
+            role: player?.is_goalkeeper ? "gk" : "line",
+          })
+          .select("*")
+          .single();
+        if (newLineup) store.addLineup(newLineup);
+        if (startedClock) {
+          await record("sub_in", { teamId: toTeamId, playerId, clockMs, reason: "substitution" });
+        }
+      }
     },
     [elapsedNow, record, store],
   );
@@ -278,7 +320,7 @@ export function useMatchActions() {
     recordCard,
     recordSuspension,
     recordInjury,
-    addPlayerToLineup,
+    movePlayerToTeam,
     voidAndCorrect,
     voidEvent,
     setPlayerStatus,

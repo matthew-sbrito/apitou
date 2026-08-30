@@ -167,4 +167,40 @@ describe("computeQueueState", () => {
     expect(state.onCourt).toEqual(["A", "C"]);
     expect(state.queue).toEqual(["B"]);
   });
+
+  it("reconciles the queue when the operator overrides the suggested pairing", () => {
+    // Mirrors a real event: 4 teams, and on the 5th match the operator
+    // pulls in a team the engine still thought was waiting in the queue
+    // (A) instead of the one it suggested (C), without C ever "leaving".
+    // Before the reconciliation fix this duplicated A in the queue and
+    // silently dropped C from ever reappearing.
+    const finished: FinishedMatch[] = [
+      { sequence: 1, home: "A", away: "B", result: "home" }, // A beats B
+      { sequence: 2, home: "A", away: "C", result: "home" }, // A beats C
+      { sequence: 3, home: "A", away: "D", result: "away" }, // D beats A
+      { sequence: 4, home: "D", away: "B", result: "home" }, // D beats B
+      // Suggested next pairing was D x C, but D x A was played instead.
+      { sequence: 5, home: "D", away: "A", result: "home" }, // D beats A
+    ];
+    const state = computeQueueState(teams, finished, baseRules);
+
+    expect(state.onCourt).toEqual(["D", "B"]);
+    expect(state.queue).toEqual(["C", "A"]);
+    // Every team appears exactly once across onCourt + queue.
+    const all = [...(state.onCourt ?? []), ...state.queue];
+    expect(new Set(all).size).toBe(all.length);
+    expect(all.sort()).toEqual(["A", "B", "C", "D"]);
+  });
+
+  it("ignores a corrupt self-match (home === away) instead of duplicating that team", () => {
+    const finished: FinishedMatch[] = [
+      { sequence: 1, home: "A", away: "A", result: "home" },
+      { sequence: 2, home: "A", away: "B", result: "home" },
+    ];
+    const state = computeQueueState(teams, finished, baseRules);
+    // The self-match is dropped entirely — only match 2 (A beats B) applies.
+    expect(state.onCourt).toEqual(["A", "C"]);
+    expect(state.queue).toEqual(["D", "B"]);
+    expect(Object.values(state.queue).filter((id) => id === "A")).toHaveLength(0);
+  });
 });

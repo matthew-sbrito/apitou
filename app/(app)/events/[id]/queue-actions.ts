@@ -78,6 +78,10 @@ export async function createNextMatch(
   homeTeamId: string,
   awayTeamId: string,
 ) {
+  if (homeTeamId === awayTeamId) {
+    return { error: "Escolhe dois times diferentes." };
+  }
+
   const supabase = await createClient();
 
   const { data: event } = await supabase

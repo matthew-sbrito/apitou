@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { useMatchStore } from "@/components/match/match-store-provider";
 import { useMatchActions } from "@/hooks/use-match-actions";
-import { MatchAdjustments } from "@/components/match/match-adjustments";
+import { RosterOverview } from "@/components/match/roster-overview";
+import { TeamSwapSection } from "@/components/match/team-swap-section";
 import type { TeamRoster } from "@/components/match/player-action-dialog";
 
-export function PausePanel() {
+/** Shown between a match being created (`scheduled`) and "Apitar início" —
+ * lets the operator see and adjust who's on each side before the clock
+ * starts. `movePlayerToTeam` already special-cases `status === "scheduled"`
+ * (no match_events, since there's no clock yet to timestamp them). */
+export function ScheduledPanel() {
   const homeTeam = useMatchStore((s) => s.homeTeam);
   const awayTeam = useMatchStore((s) => s.awayTeam);
   const lineups = useMatchStore((s) => s.lineups);
@@ -16,7 +21,6 @@ export function PausePanel() {
   const allPlayers = useMatchStore((s) => s.allPlayers);
   const allTeams = useMatchStore((s) => s.allTeams);
   const teamAssignments = useMatchStore((s) => s.teamAssignments);
-  const events = useMatchStore((s) => s.events);
   const actions = useMatchActions();
 
   const rosters: TeamRoster[] = useMemo(
@@ -31,41 +35,27 @@ export function PausePanel() {
     [homeTeam, awayTeam, lineups, players],
   );
 
-  return (
-    <div className="flex flex-col gap-6">
-      <Button
-        type="button"
-        size="lg"
-        className="w-full"
-        onClick={() => actions.resume()}
-      >
-        <PlayCircle className="h-5 w-5" />
-        Bola rolando
-      </Button>
+  const teamNameById = Object.fromEntries(allTeams.map((t) => [t.id, t.name]));
 
-      <MatchAdjustments
+  return (
+    <div className="flex w-full max-w-md flex-col gap-6 py-8">
+      <RosterOverview
         rosters={rosters}
-        allPlayers={allPlayers}
-        allTeams={allTeams}
-        lineups={lineups}
         teamAssignments={teamAssignments}
-        events={events}
-        players={players}
+        teamNameById={teamNameById}
       />
 
-      <div className="rounded-2xl border border-white/10 p-4">
-        <Button
-          type="button"
-          variant="destructive"
-          className="w-full"
-          onClick={() => actions.finish()}
-        >
-          Apitar fim
-        </Button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          Encerra essa partida e mostra a sugestão da próxima.
-        </p>
-      </div>
+      <TeamSwapSection
+        allPlayers={allPlayers}
+        allTeams={allTeams}
+        teamAssignments={teamAssignments}
+        teamNameById={teamNameById}
+      />
+
+      <Button type="button" size="lg" onClick={() => actions.start()}>
+        <PlayCircle className="h-5 w-5" />
+        Apitar início
+      </Button>
     </div>
   );
 }

@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
-import Link from "next/link";
-import { MatchStoreProvider } from "@/components/match/match-store-provider";
-import { useMatchStore } from "@/components/match/match-store-provider";
-import { MatchClock } from "@/components/match/match-clock";
-import { ScoreBoard } from "@/components/match/score-board";
 import { ActionBar } from "@/components/match/action-bar";
-import { PausePanel } from "@/components/match/pause-panel";
-import { SuspensionList } from "@/components/match/suspension-list";
+import { MatchClock } from "@/components/match/match-clock";
+import {
+  MatchStoreProvider,
+  useMatchStore,
+} from "@/components/match/match-store-provider";
 import { NextMatchPanel } from "@/components/match/next-match-panel";
+import { PausePanel } from "@/components/match/pause-panel";
+import type { TeamRoster } from "@/components/match/player-action-dialog";
+import { RosterOverview } from "@/components/match/roster-overview";
+import { ScheduledPanel } from "@/components/match/scheduled-panel";
+import { ScoreBoard } from "@/components/match/score-board";
+import { SuspensionList } from "@/components/match/suspension-list";
 import { Button } from "@/components/ui/button";
-import { useMatchActions } from "@/hooks/use-match-actions";
 import { useWakeLock } from "@/hooks/use-wake-lock";
-import { Lock, PlayCircle } from "lucide-react";
 import type { MatchStoreState } from "@/store/match-store";
+import { Home, Lock } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo } from "react";
 
 export function MatchScreen({
   initial,
@@ -45,8 +49,29 @@ function MatchScreenInner({
   const status = useMatchStore((s) => s.match.status);
   const eventId = useMatchStore((s) => s.match.event_id);
   const setClockOffset = useMatchStore((s) => s.setClockOffset);
-  const actions = useMatchActions();
+  const homeTeam = useMatchStore((s) => s.homeTeam);
+  const awayTeam = useMatchStore((s) => s.awayTeam);
+  const lineups = useMatchStore((s) => s.lineups);
+  const players = useMatchStore((s) => s.players);
+  const allTeams = useMatchStore((s) => s.allTeams);
+  const teamAssignments = useMatchStore((s) => s.teamAssignments);
   useWakeLock(!readOnly && status === "running");
+
+  const rosters: TeamRoster[] = useMemo(
+    () =>
+      [homeTeam, awayTeam].map((team) => ({
+        team,
+        players: lineups
+          .filter((l) => l.event_team_id === team.id)
+          .map((l) => players[l.event_player_id])
+          .filter((p) => p && p.status === "active"),
+      })),
+    [homeTeam, awayTeam, lineups, players],
+  );
+  const teamNameById = useMemo(
+    () => Object.fromEntries(allTeams.map((t) => [t.id, t.name])),
+    [allTeams],
+  );
 
   useEffect(() => {
     const requestedAt = Date.now();
@@ -70,7 +95,10 @@ function MatchScreenInner({
         <ReadOnlyBanner reason={readOnlyReason} />
         {(status === "running" || status === "paused") && <MatchClock />}
         <ScoreBoard />
-        <Button render={<Link href={`/events/${eventId}/summary`} />} nativeButton={false}>
+        <Button
+          render={<Link href={`/events/${eventId}/summary`} />}
+          nativeButton={false}
+        >
           Ver súmula
         </Button>
       </div>
@@ -79,12 +107,10 @@ function MatchScreenInner({
 
   if (status === "scheduled") {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 py-16">
+      <div className="flex flex-1 flex-col items-center justify-center gap-6">
+        <BackToEventLink eventId={eventId} />
         <ScoreBoard />
-        <Button type="button" size="lg" onClick={() => actions.start()}>
-          <PlayCircle className="h-5 w-5" />
-          Apitar início
-        </Button>
+        <ScheduledPanel />
       </div>
     );
   }
@@ -92,6 +118,7 @@ function MatchScreenInner({
   if (status === "finished") {
     return (
       <div className="flex flex-col gap-6">
+        <BackToEventLink eventId={eventId} />
         <ScoreBoard />
         <NextMatchPanel eventId={eventId} />
       </div>
@@ -100,12 +127,36 @@ function MatchScreenInner({
 
   return (
     <div className="flex flex-col gap-6">
+      <BackToEventLink eventId={eventId} />
       <MatchClock />
       <ScoreBoard />
+      {status === "running" && (
+        <RosterOverview
+          rosters={rosters}
+          teamAssignments={teamAssignments}
+          teamNameById={teamNameById}
+        />
+      )}
       {status === "running" && <SuspensionList />}
       {status === "running" && <ActionBar />}
       {status === "paused" && <PausePanel />}
     </div>
+  );
+}
+
+function BackToEventLink({ eventId }: { eventId: string }) {
+  return (
+    <Button
+      render={<Link href={`/events/${eventId}`} />}
+      nativeButton={false}
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className="ml-auto"
+      aria-label="Voltar pro evento"
+    >
+      <Home className="h-6 w-6" />
+    </Button>
   );
 }
 

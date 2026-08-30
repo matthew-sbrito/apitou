@@ -27,6 +27,21 @@ export function applyResult(
   match: FinishedMatch,
   rules: EventRules,
 ): QueueState {
+  // `state.onCourt` is only the *suggested* pairing — PLAN.md §7.4 requires
+  // the operator can always override which two teams actually play. When
+  // the recorded match doesn't match that suggestion, reconcile first: a
+  // suggested team that didn't actually play got benched without playing
+  // (send it to the queue), and a team that DID play but wasn't suggested
+  // was pulled in from the queue (drop it there so the loss below doesn't
+  // add it a second time). Skipping this step is what let an overridden
+  // team accumulate duplicate queue entries every time it played again.
+  const actualPair = new Set([match.home, match.away]);
+  const benched = (state.onCourt ?? []).filter((t) => !actualPair.has(t));
+  const reconciledQueue = [
+    ...state.queue.filter((t) => !actualPair.has(t)),
+    ...benched,
+  ];
+
   const reign = { ...state.reign };
   let stays: string[] = [];
   let leaves: string[] = [];
@@ -79,7 +94,7 @@ export function applyResult(
     reign[team] = 0;
   });
 
-  const queue = [...state.queue, ...leaves];
+  const queue = [...reconciledQueue, ...leaves];
   const onCourt = [...stays];
   while (onCourt.length < 2 && queue.length) onCourt.push(queue.shift()!);
 
@@ -105,6 +120,13 @@ export function computeQueueState(
   };
 
   return [...finished]
+    // A match where a team played itself should never exist (the
+    // `different_teams` DB constraint and the next-match UI both block it),
+    // but a stray corrupt/legacy row would otherwise duplicate that team
+    // into `queue` while it's also `onCourt` via `stays` — filtering it out
+    // here keeps one bad historical row from permanently poisoning every
+    // future replay of the queue.
+    .filter((match) => match.home !== match.away)
     .sort((a, b) => a.sequence - b.sequence)
     .reduce((state, match) => applyResult(state, match, rules), initial);
 }

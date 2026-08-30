@@ -1,7 +1,7 @@
 "use client";
 
 import { createNextMatch } from "@/app/(app)/events/[id]/queue-actions";
-import { moveTeam } from "@/app/(app)/events/[id]/teams/actions";
+import { swapQueuePositions } from "@/app/(app)/events/[id]/teams/actions";
 import { FinishEventButton } from "@/components/event/finish-event-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,12 +23,24 @@ import { ArrowDown, ArrowUp, Shuffle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+type RosterPlayer = { id: string; name: string; is_goalkeeper: boolean };
+type TeamWithRoster = {
+  id: string;
+  event_team_players: Array<{ event_players: RosterPlayer | null }>;
+};
+
 export function NextMatchPanel({ eventId }: { eventId: string }) {
   const router = useRouter();
   const [teams, setTeams] = useState<EventTeam[] | null>(null);
+  const [rostersByTeam, setRostersByTeam] = useState<
+    Record<string, RosterPlayer[]>
+  >({});
   const [homeId, setHomeId] = useState<string | null>(null);
   const [awayId, setAwayId] = useState<string | null>(null);
-  const [queueOrder, setQueueOrder] = useState<string[]>([]);
+  /** Full suggested order (on-court pair + bench) — the "Banco" list below
+   * is always derived from this minus whichever teams are currently picked
+   * as mandante/visitante, so it stays in sync as those selects change. */
+  const [order, setOrder] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +49,7 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
     const supabase = createClient();
 
     async function load() {
-      const [{ data: event }, { data: teamRows }, { data: results }] =
+      const [{ data: event }, { data: teamRows }, { data: results }, { data: rosterRows }] =
         await Promise.all([
           supabase.from("events").select("rules").eq("id", eventId).single(),
           supabase
@@ -50,6 +62,10 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
             .select("*")
             .eq("event_id", eventId)
             .eq("status", "finished"),
+          supabase
+            .from("event_teams")
+            .select("id, event_team_players(event_players(id, name, is_goalkeeper))")
+            .eq("event_id", eventId),
         ]);
 
       if (cancelled || !event || !teamRows) return;
@@ -63,12 +79,21 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
 
       const state = computeQueueState(teamRows, finished, event.rules);
 
+      const teamsWithRoster = rosterRows as unknown as TeamWithRoster[] | null;
+      const rosters: Record<string, RosterPlayer[]> = {};
+      for (const team of teamsWithRoster ?? []) {
+        rosters[team.id] = team.event_team_players
+          .map((row) => row.event_players)
+          .filter((p): p is RosterPlayer => p != null);
+      }
+
       setTeams(teamRows);
+      setRostersByTeam(rosters);
       if (state.onCourt) {
         setHomeId(state.onCourt[0]);
         setAwayId(state.onCourt[1]);
       }
-      setQueueOrder(state.queue);
+      setOrder([...(state.onCourt ?? []), ...state.queue]);
     }
 
     load();
@@ -77,16 +102,37 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
     };
   }, [eventId]);
 
+  const benchOrder = useMemo(() => {
+    // Defensive de-dupe on top of the exclusion filter — a team id should
+    // never appear twice, but this keeps a stray duplicate from turning
+    // into duplicate React keys (which silently scrambles the displayed
+    // position numbers) instead of just being visibly wrong.
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const id of order) {
+      if (id === homeId || id === awayId || seen.has(id)) continue;
+      seen.add(id);
+      result.push(id);
+    }
+    return result;
+  }, [order, homeId, awayId]);
+
   function reorderLocal(teamId: string, direction: "up" | "down") {
-    setQueueOrder((prev) => {
-      const index = prev.indexOf(teamId);
-      const swapWith = direction === "up" ? index - 1 : index + 1;
-      if (index < 0 || swapWith < 0 || swapWith >= prev.length) return prev;
+    // Swap with the bench-adjacent neighbor (what's actually shown), not
+    // whatever happens to sit next to it in `order` — the mandante/visitante
+    // picks can put on-court teams between them in the full order.
+    const swapWithId =
+      benchOrder[benchOrder.indexOf(teamId) + (direction === "up" ? -1 : 1)];
+    if (!swapWithId) return;
+
+    setOrder((prev) => {
       const next = [...prev];
-      [next[index], next[swapWith]] = [next[swapWith], next[index]];
+      const i = next.indexOf(teamId);
+      const j = next.indexOf(swapWithId);
+      [next[i], next[j]] = [next[j], next[i]];
       return next;
     });
-    void moveTeam(eventId, teamId, direction);
+    void swapQueuePositions(eventId, teamId, swapWithId);
   }
 
   const teamById = useMemo(
@@ -129,12 +175,16 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
             teams={teams}
             value={homeId}
             onChange={setHomeId}
+            roster={homeId ? rostersByTeam[homeId] : undefined}
+            excludeId={awayId}
           />
           <TeamSelect
             label="Visitante"
             teams={teams}
             value={awayId}
             onChange={setAwayId}
+            roster={awayId ? rostersByTeam[awayId] : undefined}
+            excludeId={homeId}
           />
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
@@ -152,10 +202,10 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
         </Button>
       </div>
 
-      {queueOrder.length > 0 && (
+      {benchOrder.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-semibold text-muted-foreground">Banco</p>
-          {queueOrder.map((teamId, index) => {
+          {benchOrder.map((teamId, index) => {
             const team = teamById[teamId];
             if (!team) return null;
             return (
@@ -190,7 +240,7 @@ export function NextMatchPanel({ eventId }: { eventId: string }) {
                           type="button"
                           variant="ghost"
                           size="icon-sm"
-                          disabled={index === queueOrder.length - 1}
+                          disabled={index === benchOrder.length - 1}
                           onClick={() => reorderLocal(teamId, "down")}
                         />
                       }
@@ -226,12 +276,20 @@ function TeamSelect({
   teams,
   value,
   onChange,
+  roster,
+  excludeId,
 }: {
   label: string;
   teams: EventTeam[];
   value: string | null;
   onChange: (id: string) => void;
+  roster?: RosterPlayer[];
+  /** Team already picked for the other side — hidden here so the same
+   * team can't be selected for both mandante and visitante. */
+  excludeId?: string | null;
 }) {
+  const options = excludeId ? teams.filter((t) => t.id !== excludeId) : teams;
+
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -249,13 +307,23 @@ function TeamSelect({
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {teams.map((t) => (
+          {options.map((t) => (
             <SelectItem key={t.id} value={t.id}>
               {t.name}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+      {roster && roster.length > 0 && (
+        <ul className="mt-1 flex flex-col gap-0.5 rounded-lg bg-background/60 p-2">
+          {roster.map((p) => (
+            <li key={p.id} className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="truncate">{p.name}</span>
+              {p.is_goalkeeper && <span className="shrink-0 text-apito-yellow">GK</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
