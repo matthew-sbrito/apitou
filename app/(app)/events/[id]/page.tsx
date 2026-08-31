@@ -5,6 +5,7 @@ import { FinishEventButton } from "@/components/event/finish-event-button";
 import { LeaveEventButton } from "@/components/event/leave-event-button";
 import { ShareEventButton } from "@/components/event/share-event-button";
 import { StartEventButton } from "@/components/event/start-event-button";
+import { StartMatchCard } from "@/components/event/start-match-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -205,6 +206,11 @@ export default async function EventDashboardPage({
             </div>
           </Link>
         )}
+
+        {isOwner &&
+          !currentMatch &&
+          event.status !== "finished" &&
+          (teamCount ?? 0) >= 2 && <StartMatchCard eventId={id} />}
 
         <Link
           href={`/events/${id}/summary`}
