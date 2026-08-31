@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeElapsed,
+  formatClock,
   isSuspended,
   remainingSuspensionMs,
   totalStoppageMs,
@@ -74,6 +75,27 @@ describe("totalStoppageMs", () => {
       { type: "pause" as const, created_at: new Date(T0).toISOString() },
     ];
     expect(totalStoppageMs(events, T0 + 45_000)).toBe(45_000);
+  });
+});
+
+describe("formatClock", () => {
+  it("shows MM:SS under an hour", () => {
+    expect(formatClock(0)).toBe("00:00");
+    expect(formatClock(59 * 60_000 + 59_000)).toBe("59:59");
+  });
+
+  it("adds hours past 59 minutes", () => {
+    expect(formatClock(60 * 60_000)).toBe("1:00:00");
+    expect(formatClock(23 * 3_600_000 + 59 * 60_000 + 59_000)).toBe(
+      "23:59:59",
+    );
+  });
+
+  it("adds days past 24 hours", () => {
+    expect(formatClock(24 * 3_600_000)).toBe("1d 00:00:00");
+    expect(
+      formatClock(2 * 86_400_000 + 3 * 3_600_000 + 4 * 60_000 + 5_000),
+    ).toBe("2d 03:04:05");
   });
 });
 

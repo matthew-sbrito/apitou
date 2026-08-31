@@ -11,14 +11,20 @@ export function computeElapsed(
   serverNowMs: number,
 ): number {
   if (match.status === "running" && match.started_at) {
-    return match.accumulated_ms + (serverNowMs - new Date(match.started_at).getTime());
+    return (
+      match.accumulated_ms +
+      (serverNowMs - new Date(match.started_at).getTime())
+    );
   }
   return match.accumulated_ms;
 }
 
 type SuspensionEvent = Pick<MatchEvent, "clock_ms" | "suspension_ms">;
 
-export function isSuspended(suspension: SuspensionEvent, elapsedMs: number): boolean {
+export function isSuspended(
+  suspension: SuspensionEvent,
+  elapsedMs: number,
+): boolean {
   const suspensionMs = suspension.suspension_ms ?? 0;
   return elapsedMs < suspension.clock_ms + suspensionMs;
 }
@@ -38,10 +44,16 @@ type StoppageEvent = Pick<MatchEvent, "type" | "created_at">;
  * (PLAN.md §6.4) — shown in the UI as "04:32 · parado 1:15" while paused.
  * If the match is currently paused, the open interval counts up to `nowMs`.
  */
-export function totalStoppageMs(events: StoppageEvent[], nowMs: number = Date.now()): number {
+export function totalStoppageMs(
+  events: StoppageEvent[],
+  nowMs: number = Date.now(),
+): number {
   const sorted = events
     .filter((e) => e.type === "pause" || e.type === "resume")
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    .sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
 
   let total = 0;
   let pausedAt: number | null = null;
@@ -61,7 +73,18 @@ export function totalStoppageMs(events: StoppageEvent[], nowMs: number = Date.no
 
 export function formatClock(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+
+  if (days > 0) {
+    return `${days}d ${String(hours).padStart(2, "0")}:${mm}:${ss}`;
+  }
+  if (hours > 0) {
+    return `${hours}:${mm}:${ss}`;
+  }
+  return `${mm}:${ss}`;
 }

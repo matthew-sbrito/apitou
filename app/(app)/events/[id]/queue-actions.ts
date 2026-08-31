@@ -144,3 +144,42 @@ export async function createNextMatch(
 
   return { matchId: match.id as string };
 }
+
+/** Undoes `createNextMatch` — only legal while the match is still
+ * `scheduled` (no clock started, so no match_events to preserve). Deleting
+ * the row cascades to its match_lineups (0001_init.sql). Returns the prior
+ * match by sequence so the operator lands back on its (finished) screen,
+ * or `null` if this was the event's first match. */
+export async function cancelScheduledMatch(matchId: string) {
+  const supabase = await createClient();
+
+  const { data: match } = await supabase
+    .from("matches")
+    .select("id, event_id, sequence, status")
+    .eq("id", matchId)
+    .single();
+
+  if (!match) return { error: "Partida não encontrada." };
+  if (match.status !== "scheduled") {
+    return { error: "Só dá pra cancelar uma partida que ainda não começou." };
+  }
+
+  const { data: previousMatch } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("event_id", match.event_id)
+    .lt("sequence", match.sequence)
+    .order("sequence", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { error } = await supabase.from("matches").delete().eq("id", matchId);
+  if (error) {
+    return { error: "Não deu pra cancelar essa partida. Tenta de novo." };
+  }
+
+  return {
+    eventId: match.event_id as string,
+    previousMatchId: (previousMatch?.id as string | undefined) ?? null,
+  };
+}

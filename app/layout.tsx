@@ -25,7 +25,7 @@ const bigShoulders = Big_Shoulders({
 });
 
 export const metadata: Metadata = {
-  title: "Apitou — organize sua pelada sem estresse",
+  title: "Apitou - Organize sua pelada sem estresse",
   description:
     "Times, cronômetro, fila de quem ganha fica e súmula da pelada — tudo na palma da mão, direto na beira do campo.",
   manifest: "/manifest.webmanifest",

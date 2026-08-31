@@ -16,7 +16,7 @@ import { SuspensionList } from "@/components/match/suspension-list";
 import { Button } from "@/components/ui/button";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import type { MatchStoreState } from "@/store/match-store";
-import { Home, Lock } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 
@@ -34,7 +34,9 @@ export function MatchScreen({
 }) {
   return (
     <MatchStoreProvider initial={initial}>
-      <MatchScreenInner readOnly={readOnly} readOnlyReason={readOnlyReason} />
+      <MatchScreenWrapper>
+        <MatchScreenInner readOnly={readOnly} readOnlyReason={readOnlyReason} />
+      </MatchScreenWrapper>
     </MatchStoreProvider>
   );
 }
@@ -108,7 +110,6 @@ function MatchScreenInner({
   if (status === "scheduled") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-6">
-        <BackToEventLink eventId={eventId} />
         <ScoreBoard />
         <ScheduledPanel />
       </div>
@@ -118,7 +119,6 @@ function MatchScreenInner({
   if (status === "finished") {
     return (
       <div className="flex flex-col gap-6">
-        <BackToEventLink eventId={eventId} />
         <ScoreBoard />
         <NextMatchPanel eventId={eventId} />
       </div>
@@ -127,7 +127,6 @@ function MatchScreenInner({
 
   return (
     <div className="flex flex-col gap-6">
-      <BackToEventLink eventId={eventId} />
       <MatchClock />
       <ScoreBoard />
       {status === "running" && (
@@ -144,19 +143,27 @@ function MatchScreenInner({
   );
 }
 
-function BackToEventLink({ eventId }: { eventId: string }) {
+function MatchScreenWrapper({ children }: { children: React.ReactNode }) {
+  const eventId = useMatchStore((s) => s.match.event_id);
+  const eventStatus = useMatchStore((s) => s.match.status);
+
   return (
-    <Button
-      render={<Link href={`/events/${eventId}`} />}
-      nativeButton={false}
-      type="button"
-      variant="ghost"
-      size="icon-sm"
-      className="ml-auto"
-      aria-label="Voltar pro evento"
+    <div
+      className="flex flex-col data-[status=finished]:gap-1"
+      data-status={eventStatus}
     >
-      <Home className="h-6 w-6" />
-    </Button>
+      <Button
+        render={<Link href={`/events/${eventId}`} />}
+        nativeButton={false}
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Voltar para a pelada"
+      >
+        <ArrowLeft className="h-6 w-6 text-foreground" />
+      </Button>
+      {children}
+    </div>
   );
 }
 

@@ -16,7 +16,10 @@ export function useMatchClock() {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
-    if (status !== "running") return;
+    // Also ticks while paused: elapsedMs itself won't move, but the
+    // "parado X:XX" stoppage readout (lib/clock.ts's totalStoppageMs) needs
+    // fresh re-renders to keep counting up during an open pause.
+    if (status !== "running" && status !== "paused") return;
     // Deferred to the next frame (not called synchronously in the effect
     // body) so the first tick lands almost immediately instead of waiting
     // out the first 200ms interval delay.

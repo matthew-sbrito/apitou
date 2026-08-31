@@ -16,6 +16,7 @@ import { formatEventDateTime } from "@/lib/format-date";
 import { eventStatusLabel } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import {
+  ArrowLeft,
   CalendarClock,
   MapPin,
   Pencil,
@@ -50,13 +51,25 @@ export default async function EventDashboardPage({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">
+        <div className="flex items-center gap-1 sm:gap-3">
+          <Button
+            render={<Link href="/events" />}
+            nativeButton={false}
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Voltar para as peladas"
+          >
+            <ArrowLeft className="size-5 text-foreground" />
+          </Button>
+          <h1 className="font-display text-xl sm:text-3xl font-bold tracking-tight">
             {event.name}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">{eventStatusLabel[event.status]}</Badge>
+        <div className="flex items-center self-end sm:gap-3">
+          <Badge className="mr-1 sm:mr-0" variant="secondary">
+            {eventStatusLabel[event.status]}
+          </Badge>
           {isOwner && (
             <>
               {event.status !== "finished" && (
@@ -90,7 +103,7 @@ export default async function EventDashboardPage({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
         {hasLocation ? (
           <Button
             render={
@@ -131,7 +144,7 @@ export default async function EventDashboardPage({
       </div>
 
       {isOwner ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           {event.status === "draft" && (
             <StartEventButton eventId={id} hasTeams={(teamCount ?? 0) > 0} />
           )}

@@ -45,7 +45,7 @@ export async function AppHeader() {
       style={{ paddingTop: "calc(var(--safe-top) + 0.75rem)" }}
     >
       <Link href="/events">
-        <Logo imageClassName="h-8 sm:h-10" wordClassName="text-sm sm:text-lg" />
+        <Logo imageClassName="h-8" wordClassName="text-sm" />
       </Link>
       <div className="flex items-center gap-4">
         <SyncBadge />
